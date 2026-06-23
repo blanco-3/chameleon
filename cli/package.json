@@ -1,0 +1,26 @@
+{
+  "name": "@chameleon/cli",
+  "version": "0.1.0",
+  "description": "Chameleon — compliance-aware privacy pool CLI for Stellar",
+  "bin": {
+    "chameleon": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "test": "ts-node src/test_crypto.ts",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^13.0.0",
+    "@taceo/poseidon2": "^0.2.0",
+    "commander": "^12.0.0",
+    "poseidon-lite": "^0.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,42 @@
+# Rust
+target/
+Cargo.lock
+
+# Noir
+circuits/*/target/
+proofs/
+*.witness
+
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Build artifacts
+*.wasm
+*.wat
+*.proof
+*.vk
+
+# Secrets / notes
+*.note.json
+*.secret
+secrets/
+
+# Keys (never commit)
+*.pem
+*.key
+
+# Stellar
+.stellar/
+deployed.json
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

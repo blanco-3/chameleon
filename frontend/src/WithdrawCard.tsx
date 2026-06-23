@@ -1,0 +1,196 @@
+/**
+ * WithdrawCard.tsx — Withdraw 100 XLM from the Chameleon privacy pool.
+ *
+ * Flow:
+ *   1. Load note file
+ *   2. Enter recipient address
+ *   3. Generate proof (requires nargo/bb — shows instructions in browser context)
+ *   4. Submit withdrawal transaction
+ *
+ * Note: Full proof generation (nargo + bb) cannot run in the browser.
+ * In the UI, we display the Prover.toml content and proof.json for the user
+ * to generate with the CLI, then paste back for submission.
+ * Production would use a proof-generation service or WASM build.
+ */
+
+import React, { useState } from 'react';
+import { Keypair, rpc as SorobanRpc, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, nativeToScVal, Address } from '@stellar/stellar-sdk';
+import type { Note } from './NoteManager';
+
+const TESTNET_RPC = 'https://soroban-testnet.stellar.org';
+const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID ?? '';
+
+interface WithdrawCardProps {
+  note: Note | null;
+}
+
+export const WithdrawCard: React.FC<WithdrawCardProps> = ({ note }) => {
+  const [recipient, setRecipient] = useState('');
+  const [secretKey, setSecretKey] = useState('');
+  const [proofJson, setProofJson] = useState('');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'setup' | 'proof-needed' | 'ready'>('setup');
+
+  function handleGenerateProofInstructions() {
+    if (!note) { setStatus('Load a note first.'); return; }
+    if (!recipient) { setStatus('Enter a recipient address.'); return; }
+    setStep('proof-needed');
+    setStatus('Generate the proof with the CLI (see instructions below), then paste proof.json content here.');
+  }
+
+  async function handleWithdraw() {
+    if (!proofJson) { setStatus('Paste proof.json content first.'); return; }
+    if (!secretKey) { setStatus('Enter your Stellar secret key (for tx signing).'); return; }
+    if (!CONTRACT_ID) { setStatus('Set VITE_CONTRACT_ID in .env'); return; }
+
+    setLoading(true);
+    setStatus('Preparing withdrawal...');
+
+    try {
+      const proof = JSON.parse(proofJson);
+      const pi = proof.humanReadable;
+
+      const server = new SorobanRpc.Server(TESTNET_RPC);
+      const keypair = Keypair.fromSecret(secretKey);
+      const account = await server.getAccount(keypair.publicKey());
+
+      const contract = new Contract(CONTRACT_ID);
+      const proofBytes = Buffer.from(proof.proof, 'hex');
+      const piBytes = Buffer.from(proof.publicInputs, 'hex');
+      const rootBytes = Buffer.from(pi.root.slice(2), 'hex');
+      const nhBytes = Buffer.from(pi.nullifierHash.slice(2), 'hex');
+      const blRootBytes = Buffer.from(pi.blacklistRoot.slice(2), 'hex');
+      const fee = BigInt(proof.fee ?? 0);
+
+      const recipientAddr = recipient || pi.recipient;
+      const relayerAddr = proof.relayer || recipientAddr;
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: Networks.TESTNET,
+      })
+        .addOperation(contract.call(
+          'withdraw',
+          xdr.ScVal.scvBytes(rootBytes),
+          xdr.ScVal.scvBytes(nhBytes),
+          new Address(recipientAddr).toScVal(),
+          new Address(relayerAddr).toScVal(),
+          nativeToScVal(fee, { type: 'i128' }),
+          xdr.ScVal.scvBytes(blRootBytes),
+          xdr.ScVal.scvBytes(proofBytes),
+          xdr.ScVal.scvBytes(piBytes),
+        ))
+        .setTimeout(60)
+        .build();
+
+      setStatus('Simulating withdrawal...');
+      const sim = await server.simulateTransaction(tx);
+      if (SorobanRpc.Api.isSimulationError(sim)) {
+        throw new Error(`Simulation failed: ${sim.error}`);
+      }
+
+      const assembled = SorobanRpc.assembleTransaction(tx, sim).build();
+      assembled.sign(keypair);
+
+      setStatus('Submitting withdrawal...');
+      const send = await server.sendTransaction(assembled);
+      if (send.status === 'ERROR') throw new Error(`Tx error: ${JSON.stringify(send)}`);
+
+      setStatus(`Withdrawal submitted! Tx: ${send.hash.slice(0, 16)}... 100 XLM released to ${recipientAddr}`);
+      setStep('setup');
+    } catch (e) {
+      setStatus(`Error: ${(e as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={styles.card}>
+      <h2 style={styles.title}>Withdraw 100 XLM</h2>
+
+      {!note && (
+        <p style={styles.hint}>Load your note file using the Note Manager tab first.</p>
+      )}
+
+      {note && step === 'setup' && (
+        <div>
+          <p style={styles.noteInfo}>
+            <strong>Commitment:</strong> <code style={styles.code}>{note.commitment.slice(0, 20)}...</code>
+          </p>
+          <label style={styles.label}>Recipient Address</label>
+          <input
+            value={recipient}
+            onChange={e => setRecipient(e.target.value)}
+            placeholder="GDEST..."
+            style={styles.input}
+          />
+          <button onClick={handleGenerateProofInstructions} style={{ ...styles.primaryBtn, marginTop: 12 }}>
+            Continue to Proof Generation
+          </button>
+        </div>
+      )}
+
+      {note && step === 'proof-needed' && (
+        <div>
+          <div style={styles.infoBox}>
+            <strong>Generate your proof with the CLI:</strong>
+            <pre style={styles.pre}>{`# 1. Sync the tree
+chameleon sync
+
+# 2. Generate proof
+chameleon prove \\
+  --note your.note.json \\
+  --to ${recipient} \\
+  --out proof.json
+
+# 3. Paste contents of proof.json below`}</pre>
+          </div>
+
+          <label style={styles.label}>Paste proof.json contents:</label>
+          <textarea
+            value={proofJson}
+            onChange={e => setProofJson(e.target.value)}
+            rows={6}
+            placeholder='{"proof": "...", "publicInputs": "...", ...}'
+            style={{ ...styles.input, fontFamily: 'monospace', fontSize: 11 }}
+          />
+
+          <label style={{ ...styles.label, marginTop: 12 }}>Stellar Secret Key (for tx signing only)</label>
+          <input
+            type="password"
+            value={secretKey}
+            onChange={e => setSecretKey(e.target.value)}
+            placeholder="SXXXXXXX..."
+            style={styles.input}
+          />
+
+          <button
+            onClick={handleWithdraw}
+            disabled={!proofJson || loading}
+            style={{ ...styles.primaryBtn, marginTop: 12, background: '#15803d' }}
+          >
+            {loading ? 'Processing...' : 'Submit Withdrawal'}
+          </button>
+        </div>
+      )}
+
+      {status && <p style={styles.status}>{status}</p>}
+    </div>
+  );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  card: { background: '#1e293b', borderRadius: 12, padding: 24, maxWidth: 600, margin: '0 auto 24px' },
+  title: { margin: '0 0 16px', color: '#4ade80' },
+  hint: { color: '#64748b', fontSize: 14 },
+  noteInfo: { fontSize: 13, color: '#94a3b8' },
+  code: { fontSize: 11 },
+  infoBox: { background: '#0f172a', borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 13 },
+  pre: { background: '#1e293b', padding: 8, borderRadius: 4, fontSize: 12, overflowX: 'auto' as const },
+  label: { display: 'block', marginBottom: 6, fontSize: 13, color: '#94a3b8', marginTop: 8 },
+  input: { width: '100%', padding: '8px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 6, color: '#e2e8f0', fontSize: 13, boxSizing: 'border-box' as const },
+  primaryBtn: { padding: '10px 20px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
+  status: { marginTop: 12, fontSize: 13, color: '#94a3b8', wordBreak: 'break-word' as const },
+};

@@ -1,0 +1,27 @@
+[package]
+name = "privacy_pool"
+version = "0.1.0"
+edition = "2021"
+description = "Chameleon — compliance-aware privacy pool on Stellar (Soroban)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["alloc"] }
+soroban-poseidon = "26.0.0"
+
+# Real UltraHonk verifier from vendored crate.
+# Feature "mock" disables this and uses a structural check instead.
+ultrahonk_soroban_verifier = { path = "../vendor/crates/ultrahonk-soroban-verifier", optional = true }
+
+[dev-dependencies]
+soroban-sdk = { version = "26.0.1", features = ["testutils"] }
+
+[features]
+# Use the real UltraHonk verifier (requires the vendored crate to build for wasm32)
+real-verifier = ["dep:ultrahonk_soroban_verifier"]
+# Use structural mock (returns true for any proof with correct byte length); for tests
+mock = []
+# Default: mock for safety (swap to real-verifier once confirmed working)
+default = ["mock"]
