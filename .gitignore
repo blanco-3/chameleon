@@ -41,3 +41,7 @@ deployed.json
 .idea/
 *.swp
 .github/workflows/
+
+# CLI runtime state
+.deployed_contract_id
+cli/.chameleon-tree.json

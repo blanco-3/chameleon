@@ -5,7 +5,6 @@
 #   STELLAR_SECRET=SXXX CHAMELEON_CONTRACT_ID=Cxxx bash scripts/seed_blacklist.sh
 #
 # Blacklists one demo commitment (0xbbbb...) so it cannot be withdrawn.
-# The blacklist_root is set to an arbitrary non-zero sentinel value.
 
 set -euo pipefail
 
@@ -42,9 +41,6 @@ console.log(root.toString(16).padStart(64, '0'));
 
 echo "Blacklist root (hex): $BLACKLIST_ROOT"
 
-ENTRIES_FILE=$(mktemp /tmp/entries.XXXX.json)
-echo "[\"$BLACKLISTED\"]" > "$ENTRIES_FILE"
-
 stellar contract invoke \
   --id "$CONTRACT_ID" \
   --source "$STELLAR_SECRET" \
@@ -54,9 +50,8 @@ stellar contract invoke \
   -- set_blacklist \
   --admin "$ADMIN_ADDR" \
   --root "$BLACKLIST_ROOT" \
-  --entries-file-path "$ENTRIES_FILE" \
+  --entries "[ \"$BLACKLISTED\" ]" \
   2>&1
-rm -f "$ENTRIES_FILE" 
 
 echo ""
 echo "Blacklist set. Demo blacklisted commitment: 0x${BLACKLISTED}"

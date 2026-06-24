@@ -97,9 +97,9 @@ export const WithdrawCard: React.FC<WithdrawCardProps> = ({ note }) => {
       const blRootBytes = Buffer.from(pi.blacklistRoot.slice(2), 'hex');
       const fee = BigInt(proof.fee ?? 0);
 
-      // proof.recipient is the Stellar G address; pi.recipient is a field element — use the former
-      const recipientAddr = recipient || proof.recipient;
-      const relayerAddr = proof.relayer || recipientAddr;
+      const recipientAddr = recipient;
+      if (!recipientAddr) { setStatus('Enter a recipient address first.'); return; }
+      const relayerAddr = walletAddress;
 
       const tx = new TransactionBuilder(account, {
         fee: BASE_FEE,
@@ -250,8 +250,8 @@ chameleon prove \\
 
           <button
             onClick={handleWithdraw}
-            disabled={!proofJson || !walletAddress || loading}
-            style={{ ...styles.primaryBtn, marginTop: 12, background: '#15803d', opacity: (!proofJson || !walletAddress || loading) ? 0.5 : 1 }}
+            disabled={!proofJson || !walletAddress || !recipient || loading}
+            style={{ ...styles.primaryBtn, marginTop: 12, background: '#15803d', opacity: (!proofJson || !walletAddress || !recipient || loading) ? 0.5 : 1 }}
           >
             {loading ? 'Processing...' : 'Submit Withdrawal'}
           </button>

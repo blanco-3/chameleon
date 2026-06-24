@@ -36,11 +36,9 @@ echo ""
 # ── Generate two accounts ─────────────────────────────────────────────────────
 echo "━━━ Setting up demo accounts ━━━"
 SENDER_SECRET="$STELLAR_SECRET"
-SENDER_ADDR=$(stellar keys address --secret-key "$SENDER_SECRET")
+SENDER_ADDR=$(cd "$CLI" && node -e "const sdk=require('@stellar/stellar-sdk');console.log(sdk.Keypair.fromSecret(process.env.STELLAR_SECRET).publicKey());" 2>/dev/null)
 
 # Generate a fresh recipient (we don't need it funded)
-RECIPIENT_KEYPAIR=$(stellar keys generate --no-fund 2>/dev/null || stellar keys generate 2>/dev/null)
-RECIPIENT_SECRET=$(echo "$RECIPIENT_KEYPAIR" | grep "Secret Key" | awk '{print $3}' 2>/dev/null || echo "$SENDER_SECRET")
 RECIPIENT_ADDR="$SENDER_ADDR"  # for simplicity, send to self in demo
 
 echo "Sender:    $SENDER_ADDR"
@@ -199,6 +197,6 @@ echo "║ PATH 2 (Blocked): Blacklisted commitment correctly rejected  ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║ ZK Proof: UltraHonk (Noir + bb)                             ║"
 echo "║ Contract: Soroban PrivacyPool on Stellar Testnet             ║"
-echo "║ Verifier: Mock (TODO: rs-soroban-ultrahonk for production)   ║"
+echo "║ Verifier: rs-soroban-ultrahonk (real UltraHonk, on-chain)    ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
