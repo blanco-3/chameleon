@@ -38,13 +38,13 @@ revealing which deposit is theirs.
 
 | Tool | Version |
 |------|---------|
-| nargo (Noir) | 1.0.0-beta.22 |
-| bb (Barretenberg) | 5.0.0-nightly.20260522 |
-| rustc | 1.90.0 |
-| cargo | 1.90.0 |
+| nargo (Noir) | 1.0.0-beta.9 |
+| bb (Barretenberg) | 0.87.0 |
+| rustc | 1.96.0 |
+| cargo | 1.96.0 |
 | stellar CLI | 26.0.0 |
 | node | v25.6.0 |
-| Rust wasm32 target | installed |
+| Rust wasm32 target | wasm32v1-none |
 
 ## Installation
 
@@ -95,11 +95,11 @@ chameleon withdraw --proof proof.json
 
 | Contract | Address |
 |----------|---------|
-| PrivacyPool | `CCIYD4T3FEFYASQ6F2MMUPLA6HB65U3XHEVENXFXZCJMANVPZWHYTOLX` |
+| PrivacyPool | `CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V` |
 | Admin | `GBOEXHMCP3J4R4FSGYBLGHWGCTQ4D2TNXI2R3N6R7J6GT4GQD2WBGS2I` |
 | Native XLM SAC | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-Explorer: https://stellar.expert/explorer/testnet/contract/CCIYD4T3FEFYASQ6F2MMUPLA6HB65U3XHEVENXFXZCJMANVPZWHYTOLX
+Explorer: https://stellar.expert/explorer/testnet/contract/CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V
 
 ## Architecture
 
@@ -124,12 +124,14 @@ See `DESIGN.md` for full specification.
 |---|---|
 | O(k) blacklist (16 slots) | Merkle non-membership proof |
 | Single denomination (100 XLM) | Multi-denomination pools |
-| Mock verifier fallback | Full on-chain UltraHonk verification |
+| Single denomination (100 XLM) | Multi-denomination pools |
+| O(k) blacklist (16 slots) | Merkle non-membership proof |
 | Single admin key | Multi-sig / DAO governance |
 | Testnet only | Mainnet + audits |
 
-> **TODO(verifier):** `rs-soroban-ultrahonk` integration — see `contracts/privacy_pool/src/verifier.rs`.
-> Mock feature flag is active; swap in real verifier once wasm32 build is confirmed.
+> **Real UltraHonk verification is active.** The `rs-soroban-ultrahonk` crate verifies proofs
+> on-chain using `nargo 1.0.0-beta.9` + `bb 0.87.0 --scheme ultra_honk --oracle_hash keccak`.
+> Full end-to-end keygen → deposit → sync → prove → withdraw confirmed on Stellar testnet.
 
 ## Current Status
 
@@ -142,3 +144,4 @@ See `DESIGN.md` for full specification.
 - [x] Phase 6 — CLI / SDK
 - [x] Phase 7 — Frontend (React + Vite)
 - [x] Phase 8 — Demo scripts, CI, docs
+- [x] Phase 9 — Real UltraHonk verifier (rs-soroban-ultrahonk 9/9 tests; E2E ✓)
