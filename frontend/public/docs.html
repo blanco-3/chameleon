@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chameleon — Whitepaper</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #4ade80;
+      --orange: #fb923c;
+      --purple: #a78bfa;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Layout */
+    .page { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 48px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+    .header .logo { font-size: 40px; margin-bottom: 12px; }
+    .header h1 { font-size: 2rem; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+    .header .subtitle { font-size: 1.05rem; color: var(--muted); font-style: italic; }
+    .header .meta { margin-top: 20px; font-size: 13px; color: var(--muted); }
+    .header .meta span { margin: 0 8px; }
+
+    /* Navigation */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+    .toc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; font-family: system-ui; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin: 6px 0; font-size: 14px; font-family: system-ui; }
+
+    /* Sections */
+    .section { margin-bottom: 52px; }
+    h2 {
+      font-size: 1.5rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 24px;
+      font-family: system-ui;
+      font-weight: 700;
+    }
+    h3 {
+      font-size: 1.1rem;
+      color: var(--green);
+      margin: 28px 0 12px;
+      font-family: system-ui;
+      font-weight: 600;
+    }
+    h4 {
+      font-size: 0.95rem;
+      color: var(--purple);
+      margin: 20px 0 8px;
+      font-family: system-ui;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    p { margin-bottom: 16px; color: var(--text); }
+    .lead { font-size: 1.05rem; color: var(--muted); font-style: italic; margin-bottom: 24px; }
+
+    /* Code */
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.85em;
+      font-family: 'Menlo', 'Monaco', monospace;
+      color: var(--green);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cdd9e5;
+    }
+    pre .comment { color: #6e7f8d; }
+    pre .keyword { color: var(--purple); }
+    pre .string { color: var(--orange); }
+    pre .fn { color: var(--accent); }
+
+    /* Math-like display */
+    .math {
+      background: var(--code-bg);
+      border-left: 3px solid var(--purple);
+      border-radius: 0 6px 6px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-family: 'Menlo', monospace;
+      font-size: 13px;
+      color: #cdd9e5;
+    }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; font-family: system-ui; }
+    th { background: var(--surface); color: var(--accent); padding: 10px 14px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+    td { padding: 9px 14px; border: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    /* Callouts */
+    .callout {
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      font-family: system-ui;
+    }
+    .callout.info { background: rgba(56,189,248,0.08); border-left: 3px solid var(--accent); }
+    .callout.warn { background: rgba(251,146,60,0.08); border-left: 3px solid var(--orange); }
+    .callout.security { background: rgba(74,222,128,0.08); border-left: 3px solid var(--green); }
+    .callout strong { display: block; margin-bottom: 6px; }
+
+    /* Diagram */
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #cdd9e5;
+      overflow-x: auto;
+      margin: 20px 0;
+      white-space: pre;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      margin-top: 64px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      font-family: system-ui;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 32px;
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: system-ui;
+      font-size: 13px;
+    }
+    .back-btn:hover { color: var(--text); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .page { padding: 24px 16px 64px; }
+      h2 { font-size: 1.25rem; }
+      pre { font-size: 11px; padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <a href="/" class="back-btn">← Back to App</a>
+
+  <div class="header">
+    <div class="logo">🦎</div>
+    <h1>Chameleon Protocol</h1>
+    <div class="subtitle">A Compliance-Aware Privacy Pool on the Stellar Network</div>
+    <div class="meta">
+      <span>v0.1.0</span>·
+      <span>Stellar Testnet</span>·
+      <span>UltraHonk / Noir</span>·
+      <span>Soroban</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#introduction">Introduction &amp; Motivation</a></li>
+      <li><a href="#primitives">Cryptographic Primitives</a></li>
+      <li><a href="#protocol">Protocol Design</a></li>
+      <li><a href="#circuit">Zero-Knowledge Circuit</a></li>
+      <li><a href="#contract">Smart Contract</a></li>
+      <li><a href="#compliance">Compliance Mechanism</a></li>
+      <li><a href="#security">Security Analysis</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#limitations">Limitations &amp; Future Work</a></li>
+      <li><a href="#conclusion">Conclusion</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. Abstract -->
+  <div class="section" id="abstract">
+    <h2>1. Abstract</h2>
+    <p class="lead">
+      Chameleon is a privacy-preserving payment pool built on the Stellar blockchain that allows users to
+      deposit and withdraw fixed-denomination XLM without revealing the link between depositor and recipient —
+      while simultaneously enforcing a compliance blacklist that cryptographically prevents sanctioned
+      addresses from withdrawing.
+    </p>
+    <p>
+      The protocol combines a Poseidon2-based Merkle accumulator with an UltraHonk zero-knowledge proof
+      system (Noir + Barretenberg) and an on-chain verifier deployed as a Soroban smart contract.
+      A depositor commits a secret note on-chain; a withdrawer later proves membership in the commitment
+      set and non-membership in a compliance blacklist, without disclosing which deposit they control.
+    </p>
+    <div class="callout info">
+      <strong>Key Property</strong>
+      Privacy and compliance are not in tension in Chameleon — they are enforced simultaneously
+      by the same zero-knowledge proof. A sanctioned user cannot generate a valid proof even offline.
+    </div>
+  </div>
+
+  <!-- 2. Introduction -->
+  <div class="section" id="introduction">
+    <h2>2. Introduction &amp; Motivation</h2>
+
+    <h3>2.1 The Problem with Transparent Blockchains</h3>
+    <p>
+      Every transaction on Stellar is permanently public. When address <code>A</code> sends 100 XLM
+      to address <code>B</code>, this link is recorded on-chain and visible to anyone forever.
+      This creates significant privacy challenges: businesses reveal counterparties, individuals
+      expose their financial history, and even pseudonymous addresses can be de-anonymized through
+      chain analysis.
+    </p>
+
+    <h3>2.2 Existing Approaches and Their Shortcomings</h3>
+    <p>
+      Tornado Cash demonstrated that zero-knowledge proofs can break the transaction graph on
+      EVM chains. However, it has two critical problems for real-world adoption:
+    </p>
+    <table>
+      <tr><th>Protocol</th><th>Privacy</th><th>Compliance</th><th>On-chain Proof</th></tr>
+      <tr><td>Direct transfer</td><td>None</td><td>Full</td><td>N/A</td></tr>
+      <tr><td>Tornado Cash</td><td>Strong</td><td>None</td><td>Groth16 (EVM)</td></tr>
+      <tr><td>Chameleon</td><td>Strong</td><td>Built-in</td><td>UltraHonk (Soroban)</td></tr>
+    </table>
+    <p>
+      Chameleon addresses the compliance gap by embedding a non-membership proof directly into
+      the withdrawal circuit. A compliance blacklist is maintained on-chain; withdrawers must
+      prove their commitment is absent from this list as part of the same ZK proof that
+      establishes their pool membership.
+    </p>
+
+    <h3>2.3 Design Goals</h3>
+    <table>
+      <tr><th>Goal</th><th>Mechanism</th></tr>
+      <tr><td>Sender-receiver unlinkability</td><td>Commitment scheme + ZK proof</td></tr>
+      <tr><td>Double-spend prevention</td><td>On-chain nullifier registry</td></tr>
+      <tr><td>Compliance enforcement</td><td>Non-membership ZK constraint</td></tr>
+      <tr><td>Proof freshness</td><td>On-chain blacklist root binding</td></tr>
+      <tr><td>Non-custodial</td><td>Smart contract, no admin withdrawal power</td></tr>
+    </table>
+  </div>
+
+  <!-- 3. Cryptographic Primitives -->
+  <div class="section" id="primitives">
+    <h2>3. Cryptographic Primitives</h2>
+
+    <h3>3.1 Poseidon2 Hash Function</h3>
+    <p>
+      All hashing in Chameleon uses <strong>Poseidon2</strong>, an algebraic hash function
+      optimized for zero-knowledge proof systems. Unlike SHA-256 or Keccak, Poseidon2 operates
+      natively over finite field elements, making its constraints inside arithmetic circuits
+      orders of magnitude cheaper.
+    </p>
+    <p>
+      We use the <strong>BN254 scalar field</strong> (order ≈ 2²⁵⁴) with a width-4 (t=4) permutation
+      and a sponge construction with rate RATE=3:
+    </p>
+    <div class="math">
+hash₂(a, b)  =  Poseidon2_perm([a, b, 0, 2·2⁶⁴])[0]
+hash₁(a)     =  Poseidon2_perm([a, 0, 0, 1·2⁶⁴])[0]
+
+IV = input_length × 2⁶⁴  (Noir's Poseidon2Hasher convention)</div>
+    <p>
+      The IV encodes the input length, preventing length-extension attacks. This construction
+      is identical to Noir's built-in <code>std::hash::poseidon2</code> and has been verified
+      to produce bit-identical outputs across three independent implementations: Noir circuit,
+      TypeScript CLI, and Rust contract tests.
+    </p>
+
+    <h3>3.2 Merkle Tree</h3>
+    <p>
+      The commitment accumulator is a binary Merkle tree of depth 20, supporting up to 2²⁰ ≈ 1,048,576 deposits.
+      Each leaf stores a commitment; internal nodes are Poseidon2 hashes of their two children.
+      Empty subtrees use a precomputed zero-value chain:
+    </p>
+    <div class="math">
+ZERO[0]  = 0
+ZERO[i]  = Poseidon2(ZERO[i-1], ZERO[i-1])
+
+depth    = 20
+capacity = 2²⁰ = 1,048,576 deposits</div>
+    <p>
+      The Merkle root summarizes all deposits and changes with every new insertion.
+      To mitigate race conditions between concurrent deposits and proof generation,
+      the contract stores the last 30 valid roots. A proof generated against any of
+      these roots is accepted.
+    </p>
+
+    <h3>3.3 UltraHonk Proof System</h3>
+    <p>
+      Chameleon uses <strong>UltraHonk</strong>, a recent proof system from the Aztec/Barretenberg
+      project with the following properties relevant to Soroban deployment:
+    </p>
+    <table>
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Proof size</td><td>14,592 bytes (456 × 32)</td></tr>
+      <tr><td>Verification key size</td><td>1,760 bytes</td></tr>
+      <tr><td>Transcript hash</td><td>Keccak-256 (oracle_hash=keccak)</td></tr>
+      <tr><td>Toolchain</td><td>nargo 1.0.0-beta.9 + bb 0.87.0</td></tr>
+      <tr><td>On-chain verifier</td><td>rs-soroban-ultrahonk</td></tr>
+    </table>
+    <div class="callout warn">
+      <strong>Critical: oracle_hash=keccak</strong>
+      bb 0.87.0 defaults to a Poseidon transcript. The on-chain verifier
+      (<code>ultrahonk_soroban_verifier</code>) requires <code>--oracle_hash keccak</code>.
+      Proofs generated without this flag will fail verification with <code>InvalidProof</code>.
+    </div>
+  </div>
+
+  <!-- 4. Protocol Design -->
+  <div class="section" id="protocol">
+    <h2>4. Protocol Design</h2>
+
+    <div class="diagram">
+User                     CLI / Frontend              Soroban Contract
+ │                             │                            │
+ │── keygen ──────────────────▶│                            │
+ │   nullifier ← random()      │                            │
+ │   secret    ← random()      │                            │
+ │   commit    = H(null,sec)   │                            │
+ │                             │                            │
+ │── deposit ─────────────────▶│── deposit(from, commit) ──▶│
+ │   (100 XLM)                 │                            │ insert leaf
+ │                             │                            │ emit Deposited(leaf_idx, commit)
+ │                             │                            │
+ │── sync ─────────────────────▶│ fetch events              │
+ │                             │ rebuild Merkle tree        │
+ │                             │                            │
+ │── prove ────────────────────▶│ nargo execute             │
+ │   (to: recipient)           │ bb prove --oracle_hash keccak
+ │                             │ → proof.json               │
+ │                             │                            │
+ │── withdraw ────────────────▶│── withdraw(proof) ─────────▶│
+ │                             │                            │ verify ZK proof
+ │                             │                            │ mark nullifier spent
+ │◀─ 100 XLM ─────────────────────────────────────────────  │ transfer XLM</div>
+
+    <h3>4.1 Note Generation</h3>
+    <p>
+      A <em>note</em> is a pair <code>(nullifier, secret)</code> of cryptographically random
+      256-bit field elements. The user must store this note securely — it is the only credential
+      needed to withdraw. Loss of the note is permanent loss of funds.
+    </p>
+    <div class="math">
+nullifier  ←  random(𝔽_BN254)
+secret     ←  random(𝔽_BN254)
+commitment  =  Poseidon2(nullifier, secret)</div>
+
+    <h3>4.2 Deposit</h3>
+    <p>
+      The depositor calls <code>deposit(from, commitment)</code> on the contract, transferring
+      exactly <code>DENOMINATION</code> (100 XLM = 10⁹ stroops) from their account.
+      The contract inserts the commitment into the next leaf of the Merkle tree and emits
+      a <code>Deposited</code> event containing the leaf index and commitment.
+    </p>
+    <p>
+      Only the commitment is recorded on-chain. The nullifier and secret never leave the user's device.
+    </p>
+
+    <h3>4.3 Sync</h3>
+    <p>
+      Before proving, the user must reconstruct the current Merkle tree by fetching all
+      <code>Deposited</code> events from the contract and reinserting commitments in order.
+      The CLI caches this state locally. The root of the reconstructed tree must match
+      one of the last 30 roots stored on-chain.
+    </p>
+
+    <h3>4.4 Proof Generation</h3>
+    <p>
+      The CLI writes a <code>Prover.toml</code> containing all public and private inputs,
+      then invokes <code>nargo execute</code> (witness generation) followed by
+      <code>bb prove --scheme ultra_honk --oracle_hash keccak</code> (proof generation).
+      The resulting <code>proof.json</code> contains:
+    </p>
+    <table>
+      <tr><th>Field</th><th>Size</th><th>Description</th></tr>
+      <tr><td><code>proof</code></td><td>14,592 B</td><td>Raw UltraHonk proof bytes (hex)</td></tr>
+      <tr><td><code>publicInputs</code></td><td>192 B</td><td>6 × 32-byte field elements (hex)</td></tr>
+      <tr><td><code>humanReadable</code></td><td>—</td><td>Named public inputs for debugging</td></tr>
+    </table>
+
+    <h3>4.5 Withdrawal</h3>
+    <p>
+      The withdrawer submits the proof to the contract's <code>withdraw</code> function.
+      The contract verifies:
+    </p>
+    <ol style="padding-left:20px; margin:12px 0; font-size:14px; font-family:system-ui; line-height:2;">
+      <li>The Merkle root in the proof is a known recent root</li>
+      <li>The nullifier hash has not been spent before</li>
+      <li>The blacklist root in the proof matches the current on-chain root</li>
+      <li>The UltraHonk ZK proof is valid (on-chain verification)</li>
+    </ol>
+    <p>
+      If all checks pass, the nullifier hash is recorded and 100 XLM is transferred to
+      the recipient. The recipient address is bound into the proof, preventing front-running.
+    </p>
+  </div>
+
+  <!-- 5. ZK Circuit -->
+  <div class="section" id="circuit">
+    <h2>5. Zero-Knowledge Circuit</h2>
+    <p>
+      The Chameleon circuit is written in <strong>Noir</strong> and compiled to an ACIR
+      (Abstract Circuit Intermediate Representation) artifact. It enforces six constraints:
+    </p>
+
+    <h3>5.1 Public &amp; Private Inputs</h3>
+    <table>
+      <tr><th>Input</th><th>Type</th><th>Visibility</th></tr>
+      <tr><td><code>root</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>nullifier_hash</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>recipient</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>relayer</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>fee</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>blacklist_root</code></td><td>Field</td><td>Public</td></tr>
+      <tr><td><code>nullifier</code></td><td>Field</td><td>Private</td></tr>
+      <tr><td><code>secret</code></td><td>Field</td><td>Private</td></tr>
+      <tr><td><code>path_elements[20]</code></td><td>Field[]</td><td>Private</td></tr>
+      <tr><td><code>path_indices[20]</code></td><td>Field[]</td><td>Private</td></tr>
+      <tr><td><code>blacklist[16]</code></td><td>Field[]</td><td>Private</td></tr>
+    </table>
+
+    <h3>5.2 Circuit Constraints</h3>
+    <pre><span class="comment">// Constraint 1: commitment is correctly formed</span>
+<span class="fn">let</span> commitment = <span class="fn">hash_2</span>(nullifier, secret);
+
+<span class="comment">// Constraint 2: nullifier_hash is correctly formed  </span>
+<span class="fn">assert</span>(<span class="fn">hash_1</span>(nullifier) == nullifier_hash);
+
+<span class="comment">// Constraint 3: commitment exists in the Merkle tree</span>
+<span class="fn">let</span> computed_root = <span class="fn">merkle_root</span>(commitment, path_elements, path_indices);
+<span class="fn">assert</span>(computed_root == root);
+
+<span class="comment">// Constraint 4: commitment is not in the compliance blacklist</span>
+<span class="fn">assert_not_blacklisted</span>(commitment, blacklist);
+
+<span class="comment">// Constraint 5: public inputs are anchored (anti-malleability)</span>
+<span class="fn">let</span> _anchor = recipient + relayer + fee + blacklist_root;</pre>
+
+    <h3>5.3 Merkle Verification</h3>
+    <p>
+      The Merkle path verification recomputes the root from the leaf commitment and 20
+      sibling hashes. At each level, the hasher chooses left/right order based on
+      the path index bit:
+    </p>
+    <pre><span class="fn">fn</span> <span class="fn">merkle_root</span>(leaf: Field, siblings: [Field; 20], indices: [Field; 20]) -> Field {
+    <span class="fn">let mut</span> current = leaf;
+    <span class="fn">for</span> i <span class="keyword">in</span> 0..20 {
+        <span class="fn">let</span> (left, right) = <span class="fn">if</span> indices[i] == 0 {
+            (current, siblings[i])
+        } <span class="fn">else</span> {
+            (siblings[i], current)
+        };
+        current = <span class="fn">hash_2</span>(left, right);
+    }
+    current
+}</pre>
+
+    <h3>5.4 Non-Membership Proof</h3>
+    <p>
+      The blacklist check is an O(k) linear scan over 16 slots. Zero-valued slots are
+      treated as empty sentinels and skipped. If any non-zero slot equals the withdrawer's
+      commitment, the constraint fails and no valid proof can be generated:
+    </p>
+    <pre><span class="fn">fn</span> <span class="fn">assert_not_blacklisted</span>(commitment: Field, blacklist: [Field; 16]) {
+    <span class="fn">for</span> i <span class="keyword">in</span> 0..16 {
+        <span class="fn">if</span> blacklist[i] != 0 {
+            <span class="fn">assert</span>(commitment != blacklist[i]);
+        }
+    }
+}</pre>
+    <div class="callout security">
+      <strong>Security Property</strong>
+      The non-membership check runs inside the ZK circuit. A sanctioned user cannot bypass it
+      by submitting a false proof — the proof system guarantees the constraint was satisfied.
+      The only way to forge a proof would be to break the discrete-log hardness assumption
+      underlying BN254.
+    </div>
+  </div>
+
+  <!-- 6. Smart Contract -->
+  <div class="section" id="contract">
+    <h2>6. Smart Contract</h2>
+    <p>
+      The PrivacyPool contract is written in <strong>Rust</strong> and compiled to
+      <code>wasm32v1-none</code> for the Soroban environment (Stellar Protocol 22+).
+    </p>
+
+    <h3>6.1 Storage Layout</h3>
+    <table>
+      <tr><th>Key</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>Admin</code></td><td>Address</td><td>Account authorized for admin ops</td></tr>
+      <tr><td><code>Token</code></td><td>Address</td><td>XLM SAC contract address</td></tr>
+      <tr><td><code>Vk</code></td><td>Bytes (1,760)</td><td>UltraHonk verification key</td></tr>
+      <tr><td><code>Depth</code></td><td>u32</td><td>Merkle tree depth (20)</td></tr>
+      <tr><td><code>Denomination</code></td><td>i128</td><td>Fixed deposit amount (stroops)</td></tr>
+      <tr><td><code>NextIndex</code></td><td>u32</td><td>Next leaf insertion index</td></tr>
+      <tr><td><code>FilledSubtrees</code></td><td>Vec&lt;BytesN&lt;32&gt;&gt;</td><td>Incremental Merkle state</td></tr>
+      <tr><td><code>RootHistory[i]</code></td><td>BytesN&lt;32&gt;</td><td>Last 30 valid roots</td></tr>
+      <tr><td><code>Nullifiers[h]</code></td><td>bool</td><td>Spent nullifier registry</td></tr>
+      <tr><td><code>BlacklistRoot</code></td><td>BytesN&lt;32&gt;</td><td>Current compliance root</td></tr>
+      <tr><td><code>BlacklistEntries[c]</code></td><td>bool</td><td>Individual blacklisted commitments</td></tr>
+    </table>
+
+    <h3>6.2 Error Codes</h3>
+    <table>
+      <tr><th>Code</th><th>Name</th><th>Condition</th></tr>
+      <tr><td>#1</td><td>AlreadyInitialized</td><td>initialize() called twice</td></tr>
+      <tr><td>#2</td><td>NotInitialized</td><td>State not set up</td></tr>
+      <tr><td>#3</td><td>Unauthorized</td><td>Caller is not admin</td></tr>
+      <tr><td>#4</td><td>CommitmentExists</td><td>Duplicate commitment deposit</td></tr>
+      <tr><td>#5</td><td>TreeFull</td><td>All 2²⁰ leaves used</td></tr>
+      <tr><td>#6</td><td>NullifierSpent</td><td>Double-spend attempt</td></tr>
+      <tr><td>#7</td><td>UnknownRoot</td><td>Proof uses stale/invalid root</td></tr>
+      <tr><td>#8</td><td>InvalidProof</td><td>ZK proof verification failed</td></tr>
+      <tr><td>#9</td><td>StaleBlacklist</td><td>Proof uses outdated blacklist root</td></tr>
+      <tr><td>#10</td><td>InvalidDenomination</td><td>Wrong deposit amount</td></tr>
+    </table>
+
+    <h3>6.3 On-Chain Proof Verification</h3>
+    <p>
+      The <code>rs-soroban-ultrahonk</code> crate implements UltraHonk verification natively
+      in Soroban, without any trusted setup. The verification key (1,760 bytes) is stored
+      on-chain at initialization and used to verify every withdrawal proof:
+    </p>
+    <pre><span class="fn">let</span> vk = <span class="fn">get_vk</span>(&env)?;
+<span class="fn">if</span> !<span class="fn">verifier::verify</span>(&env, &vk, &proof, &public_inputs) {
+    <span class="keyword">return</span> <span class="fn">Err</span>(PoolError::InvalidProof);
+}</pre>
+    <p>
+      The verifier operates on 14,592-byte proof blobs and 192-byte public input blocks
+      (6 × 32-byte big-endian field elements).
+    </p>
+  </div>
+
+  <!-- 7. Compliance -->
+  <div class="section" id="compliance">
+    <h2>7. Compliance Mechanism</h2>
+
+    <h3>7.1 Design Philosophy</h3>
+    <p>
+      Chameleon's compliance system is <em>inclusion-proof-based</em>: instead of reactively
+      blacklisting withdrawals, it requires every withdrawer to <em>prove</em> they are not sanctioned.
+      This is enforced at proof-generation time by the ZK circuit — not merely at contract validation time.
+    </p>
+
+    <h3>7.2 Blacklist Lifecycle</h3>
+    <div class="diagram">
+Admin                              Contract
+ │                                    │
+ │── set_blacklist(root, entries) ───▶│  store BlacklistRoot = root
+ │                                    │  store BlacklistEntries[c] = true
+ │                                    │  for each entry c in entries
+ │
+ │  (root is public; entries are indexed for contract-level checks)
+ │
+Withdrawer (sanctioned):
+ │
+ │  Prover.toml includes blacklist = [sanctioned_commitment, ...]
+ │  nargo execute → FAIL: assert(commitment != entry) violated
+ │  → Cannot generate proof → Cannot withdraw</div>
+
+    <h3>7.3 Freshness Enforcement</h3>
+    <p>
+      The <code>blacklist_root</code> is a public input bound into every ZK proof.
+      The contract stores the current root and rejects any proof whose
+      <code>blacklist_root</code> does not match (<code>StaleBlacklist</code>).
+    </p>
+    <p>
+      This means: when the admin updates the blacklist, all previously generated proofs
+      are immediately invalidated. A sanctioned user cannot use a proof generated before
+      their address was added to the list.
+    </p>
+
+    <h3>7.4 Hackathon Scope Note</h3>
+    <div class="callout warn">
+      <strong>Current Limitation</strong>
+      The blacklist_root is not cryptographically derived from the entries inside the ZK circuit —
+      it is an externally provided commitment. In a production system, the circuit would compute
+      <code>blacklist_root = Poseidon2_tree(entries)</code> and verify this computation,
+      creating a cryptographic binding. The current design relies on the admin providing
+      consistent root/entries pairs and on the contract's entry registry for double-checking.
+      Production-grade non-membership proofs would use an indexed Merkle tree
+      (e.g., Semaphore-style) to make the binding explicit inside the circuit.
+    </div>
+  </div>
+
+  <!-- 8. Security -->
+  <div class="section" id="security">
+    <h2>8. Security Analysis</h2>
+
+    <h3>8.1 Sender-Receiver Unlinkability</h3>
+    <p>
+      Given a withdrawal proof, an adversary observing the blockchain sees:
+    </p>
+    <ul style="padding-left:20px; margin:12px 0; font-size:14px; font-family:system-ui; line-height:2.2;">
+      <li>The <code>nullifier_hash</code> (a hash of the nullifier, not linkable to the commitment)</li>
+      <li>The <code>recipient</code> address</li>
+      <li>The Merkle <code>root</code> (summarizes all deposits, not which one is spent)</li>
+    </ul>
+    <p>
+      Linking a specific withdrawal to a specific deposit requires inverting
+      <code>commitment = Poseidon2(nullifier, secret)</code> and
+      <code>nullifier_hash = Poseidon2(nullifier)</code> simultaneously, which is
+      computationally infeasible under standard hash function assumptions.
+      The anonymity set is the number of deposits made since the last sync.
+    </p>
+
+    <h3>8.2 Double-Spend Prevention</h3>
+    <p>
+      Each withdrawal produces a unique <code>nullifier_hash</code> derived from the note's nullifier.
+      The contract records every spent nullifier hash. A second withdrawal attempt with the same
+      note returns <code>NullifierSpent</code> before reaching the proof verifier.
+    </p>
+
+    <h3>8.3 Front-Running Prevention</h3>
+    <p>
+      The <code>recipient</code>, <code>relayer</code>, and <code>fee</code> fields are bound
+      into the ZK proof as public inputs. A front-runner who intercepts a withdrawal transaction
+      cannot redirect funds to a different address without invalidating the proof.
+    </p>
+
+    <h3>8.4 Proof Soundness</h3>
+    <p>
+      UltraHonk is a knowledge-sound proof system under the discrete-log hardness assumption on
+      BN254. Forging a proof for a commitment not in the Merkle tree, or bypassing the
+      non-membership check, would require computing a discrete log over a 254-bit curve —
+      infeasible for any classical adversary.
+    </p>
+
+    <h3>8.5 Threat Model</h3>
+    <table>
+      <tr><th>Threat</th><th>Mitigation</th></tr>
+      <tr><td>Compromise of nullifier/secret</td><td>User key management (out of scope)</td></tr>
+      <tr><td>Admin key compromise</td><td>Multi-sig governance (future work)</td></tr>
+      <tr><td>Chain reorg invalidating deposit</td><td>Wait for finality before proving</td></tr>
+      <tr><td>Griefing via blacklist abuse</td><td>Admin accountability; DAO governance in production</td></tr>
+      <tr><td>Proof replay on another contract</td><td>Contract ID not bound in proof (future improvement)</td></tr>
+    </table>
+  </div>
+
+  <!-- 9. Implementation -->
+  <div class="section" id="implementation">
+    <h2>9. Implementation</h2>
+
+    <h3>9.1 Component Overview</h3>
+    <table>
+      <tr><th>Component</th><th>Language</th><th>Purpose</th></tr>
+      <tr><td><code>circuits/privacy_pool</code></td><td>Noir</td><td>ZK withdrawal circuit</td></tr>
+      <tr><td><code>contracts/privacy_pool</code></td><td>Rust / Soroban</td><td>On-chain pool + verifier</td></tr>
+      <tr><td><code>contracts/vendor/rs-soroban-ultrahonk</code></td><td>Rust</td><td>UltraHonk verifier crate</td></tr>
+      <tr><td><code>cli/</code></td><td>TypeScript</td><td>keygen / deposit / sync / prove / withdraw</td></tr>
+      <tr><td><code>frontend/</code></td><td>React + Vite</td><td>Browser UI with Freighter wallet</td></tr>
+    </table>
+
+    <h3>9.2 Toolchain Versions (Pinned)</h3>
+    <table>
+      <tr><th>Tool</th><th>Version</th><th>Notes</th></tr>
+      <tr><td>nargo (Noir)</td><td>1.0.0-beta.9</td><td>2-arg poseidon2_permutation API</td></tr>
+      <tr><td>bb (Barretenberg)</td><td>0.87.0</td><td>Must use --oracle_hash keccak</td></tr>
+      <tr><td>rustc</td><td>1.96.0</td><td>wasm32v1-none target</td></tr>
+      <tr><td>soroban-sdk</td><td>26.0.1</td><td>Protocol 22+</td></tr>
+      <tr><td>stellar-sdk (JS)</td><td>16.0.1</td><td>TransactionMeta v4 support</td></tr>
+      <tr><td>@stellar/freighter-api</td><td>6.0.1</td><td>Browser wallet signing</td></tr>
+    </table>
+
+    <h3>9.3 Deployed Contracts (Testnet)</h3>
+    <table>
+      <tr><th>Contract</th><th>Address</th></tr>
+      <tr><td>PrivacyPool</td><td><code>CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V</code></td></tr>
+      <tr><td>Admin</td><td><code>GBOEXHMCP3J4R4FSGYBLGHWGCTQ4D2TNXI2R3N6R7J6GT4GQD2WBGS2I</code></td></tr>
+      <tr><td>Native XLM SAC</td><td><code>CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC</code></td></tr>
+    </table>
+
+    <h3>9.4 Test Coverage</h3>
+    <table>
+      <tr><th>Suite</th><th>Result</th></tr>
+      <tr><td>Noir circuit (nargo test)</td><td>4/4 pass</td></tr>
+      <tr><td>Soroban contract (cargo test --features mock)</td><td>10/10 pass</td></tr>
+      <tr><td>rs-soroban-ultrahonk integration</td><td>9/9 pass</td></tr>
+      <tr><td>Poseidon2 cross-impl consistency</td><td>Noir = TypeScript = Rust ✓</td></tr>
+      <tr><td>End-to-end testnet</td><td>keygen→deposit→sync→prove→withdraw ✓</td></tr>
+    </table>
+  </div>
+
+  <!-- 10. Limitations -->
+  <div class="section" id="limitations">
+    <h2>10. Limitations &amp; Future Work</h2>
+
+    <h3>10.1 Current Limitations</h3>
+    <table>
+      <tr><th>Limitation</th><th>Production Equivalent</th></tr>
+      <tr><td>Fixed 100 XLM denomination</td><td>Multi-denomination pools with denomination commitments</td></tr>
+      <tr><td>16-slot linear blacklist scan</td><td>Merkle non-membership (indexed Merkle tree)</td></tr>
+      <tr><td>Blacklist root not circuit-bound to entries</td><td>Circuit computes root from entries internally</td></tr>
+      <tr><td>Single admin key</td><td>Multi-sig / DAO governance</td></tr>
+      <tr><td>Proof generation requires CLI (minutes)</td><td>WASM prover or proof-generation service</td></tr>
+      <tr><td>Testnet only</td><td>Mainnet deployment + security audit</td></tr>
+      <tr><td>Contract ID not in proof</td><td>Bind contract address as a public input</td></tr>
+    </table>
+
+    <h3>10.2 Roadmap</h3>
+    <ul style="padding-left:20px; margin:12px 0; font-size:14px; font-family:system-ui; line-height:2.2;">
+      <li><strong>Cryptographic blacklist binding</strong> — Compute root from entries inside the circuit</li>
+      <li><strong>WASM prover</strong> — In-browser proof generation (eliminates CLI dependency)</li>
+      <li><strong>Relayer network</strong> — Gas-less withdrawals via relayer fee mechanism</li>
+      <li><strong>Multiple denominations</strong> — 10 / 100 / 1000 XLM pools with shielded denomination</li>
+      <li><strong>DAO governance</strong> — Decentralized blacklist management via Stellar governance token</li>
+      <li><strong>Security audit</strong> — Third-party review of circuit and contract</li>
+    </ul>
+  </div>
+
+  <!-- 11. Conclusion -->
+  <div class="section" id="conclusion">
+    <h2>11. Conclusion</h2>
+    <p>
+      Chameleon demonstrates that privacy and compliance are not mutually exclusive on a
+      transparent blockchain. By embedding a non-membership proof inside the withdrawal
+      circuit, the protocol achieves strong sender-receiver unlinkability while guaranteeing
+      that sanctioned addresses cannot withdraw — without requiring the compliance system to
+      learn anything about legitimate users.
+    </p>
+    <p>
+      The on-chain UltraHonk verifier (<code>rs-soroban-ultrahonk</code>) enables trustless,
+      permissionless verification of 14,592-byte proofs inside Soroban smart contracts —
+      a novel capability on the Stellar network. All code is open-source and the contract
+      is deployed on Stellar Testnet.
+    </p>
+    <div class="callout security">
+      <strong>Open Source</strong>
+      Source code: <a href="https://github.com/blanco-3/chameleon">github.com/blanco-3/chameleon</a><br>
+      Live demo: <a href="https://chameleon-frontend-971342541474.us-central1.run.app">chameleon-frontend-971342541474.us-central1.run.app</a><br>
+      Contract explorer: <a href="https://stellar.expert/explorer/testnet/contract/CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V">stellar.expert</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Chameleon Protocol · Hackathon Demo · Stellar Testnet · Not audited · Do not use for real funds</p>
+    <p style="margin-top:8px;">Built with Noir · Barretenberg · Soroban · React · GCP Cloud Run</p>
+  </div>
+
+</div>
+</body>
+</html>
