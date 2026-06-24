@@ -1,4 +1,4 @@
-// main.nr — Chameleon PrivacyPool ZK circuit.
+// main.nr  - Chameleon PrivacyPool ZK circuit.
 //
 // Proves in zero knowledge that:
 //   1. The prover knows (nullifier, secret) such that Poseidon2(nullifier, secret) = commitment
@@ -8,7 +8,7 @@
 //   4. recipient, relayer, fee are bound as public inputs (anti-front-running).
 //   5. blacklist_root is a public input constraining which blacklist was certified.
 //
-// Public inputs (in order — MUST match Soroban contract and TypeScript SDK):
+// Public inputs (in order  - MUST match Soroban contract and TypeScript SDK):
 //   [root, nullifier_hash, recipient, relayer, fee, blacklist_root]
 //
 // Private inputs:
@@ -25,19 +25,19 @@ use blacklist::assert_not_blacklisted;
 /// Chameleon privacy pool withdrawal circuit.
 ///
 /// # Public Inputs (constrained by UltraHonk; verifier checks these match the on-chain values)
-/// - `root`          — Merkle root the prover claims to be a member of
-/// - `nullifier_hash`— Poseidon2(nullifier); marks this deposit spent on-chain
-/// - `recipient`     — Withdrawal destination address encoded as a field element
-/// - `relayer`       — Relayer address (anti-front-running anchor; 0 if no relayer)
-/// - `fee`           — Fee in stroops (anti-front-running anchor; 0 if no fee)
-/// - `blacklist_root`— Poseidon2 root of the blacklist set that was checked
+/// - `root`           - Merkle root the prover claims to be a member of
+/// - `nullifier_hash` - Poseidon2(nullifier); marks this deposit spent on-chain
+/// - `recipient`      - Withdrawal destination address encoded as a field element
+/// - `relayer`        - Relayer address (anti-front-running anchor; 0 if no relayer)
+/// - `fee`            - Fee in stroops (anti-front-running anchor; 0 if no fee)
+/// - `blacklist_root` - Poseidon2 root of the blacklist set that was checked
 ///
 /// # Private Inputs
-/// - `nullifier`      — The prover's secret nullifier
-/// - `secret`         — The prover's secret randomness
-/// - `path_elements`  — Merkle authentication path (20 sibling hashes)
-/// - `path_indices`   — Merkle path directions (0=left, 1=right) per level
-/// - `blacklist`      — 16 blacklisted commitments (zero-padded for empty slots)
+/// - `nullifier`       - The prover's secret nullifier
+/// - `secret`          - The prover's secret randomness
+/// - `path_elements`   - Merkle authentication path (20 sibling hashes)
+/// - `path_indices`    - Merkle path directions (0=left, 1=right) per level
+/// - `blacklist`       - 16 blacklisted commitments (zero-padded for empty slots)
 fn main(
     // --- Public inputs ---
     root:           pub Field,
@@ -74,11 +74,11 @@ fn main(
     //    We explicitly "use" them to ensure they are not optimized out.
     //    (In UltraHonk, all public inputs are already committed via the transcript,
     //     but asserting them to a computed value would trivialize the circuit.
-    //     Their presence as pub inputs is sufficient — UltraHonk binds them.)
+    //     Their presence as pub inputs is sufficient  - UltraHonk binds them.)
     let _anchor = recipient + relayer + fee + blacklist_root;
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// -- Tests ---------------------------------------------------------------------
 
 #[test]
 fn test_valid_witness() {
@@ -171,7 +171,7 @@ fn test_wrong_sibling_fails() {
     bad_path[0] = 12345; // wrong sibling
 
     main(
-        real_root,  // root from correct path — won't match bad_path recomputation
+        real_root,  // root from correct path  - won't match bad_path recomputation
         expected_nh,
         0x1234,
         0,

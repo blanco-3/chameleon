@@ -1,11 +1,13 @@
 # Chameleon — Makefile
 # All targets assume tools are in PATH: nargo, bb, stellar, node, cargo
 
-NARGO   ?= $(HOME)/.nargo/bin/nargo
-BB      ?= $(HOME)/.bb/bb
-STELLAR ?= stellar
-NODE    ?= node
-CARGO   ?= $(HOME)/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo
+NARGO     ?= $(HOME)/.nargo/bin/nargo
+BB        ?= $(HOME)/.bb/bb
+STELLAR   ?= stellar
+NODE      ?= node
+TOOLCHAIN ?= $(HOME)/.rustup/toolchains/stable-aarch64-apple-darwin
+CARGO     ?= $(TOOLCHAIN)/bin/cargo
+export PATH := $(TOOLCHAIN)/bin:$(HOME)/.nargo/bin:$(HOME)/.bb:$(PATH)
 
 CIRCUIT_DIR := circuits/privacy_pool
 CONTRACT_DIR := contracts
@@ -22,14 +24,14 @@ build-circuit: ## Compile the Noir circuit
 gen-vk: build-circuit ## Generate proof + verification key (requires sample witness)
 	bash scripts/gen_vk.sh
 
-build-contracts: ## Build Soroban contracts for wasm32v1-none
-	cd $(CONTRACT_DIR) && $(CARGO) build --target wasm32v1-none --release -p privacy_pool --features mock
+build-contracts: ## Build Soroban contracts with real UltraHonk verifier (nargo beta.9 + bb 0.87.0)
+	cd $(CONTRACT_DIR) && $(CARGO) build --target wasm32v1-none --release -p privacy_pool
 
 build-contracts-mock: ## Build contracts with mock verifier (for testing)
-	cd $(CONTRACT_DIR) && $(CARGO) build --target wasm32v1-none --release -p privacy_pool --features mock
+	cd $(CONTRACT_DIR) && $(CARGO) build --target wasm32v1-none --release -p privacy_pool --features mock --no-default-features
 
-test-contracts: ## Run Soroban unit tests (uses mock verifier)
-	cd $(CONTRACT_DIR) && $(CARGO) test -p privacy_pool --features mock -- --test-threads=1
+test-contracts: ## Run Soroban unit tests (uses mock verifier for speed)
+	cd $(CONTRACT_DIR) && $(CARGO) test -p privacy_pool --features mock --no-default-features -- --test-threads=1
 
 test-circuit: ## Run nargo tests
 	cd $(CIRCUIT_DIR) && $(NARGO) test

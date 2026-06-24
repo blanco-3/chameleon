@@ -1,4 +1,4 @@
-// blacklist.nr — Non-membership check for the Chameleon compliance circuit.
+// blacklist.nr  - Non-membership check for the Chameleon compliance circuit.
 //
 // Implements the O(k) "none of the 16 blacklist slots equals my commitment" check.
 // Zero entries are sentinels meaning "slot unused" and are skipped.
@@ -15,8 +15,8 @@
 /// All non-zero slots are checked: if any equals `commitment`, the constraint fails.
 ///
 /// # Arguments
-/// - `commitment` — The prover's commitment (Poseidon2(nullifier, secret))
-/// - `blacklist`  — 16 commitments that are compliance-blacklisted (zero-padded)
+/// - `commitment`  - The prover's commitment (Poseidon2(nullifier, secret))
+/// - `blacklist`   - 16 commitments that are compliance-blacklisted (zero-padded)
 pub fn assert_not_blacklisted(commitment: Field, blacklist: [Field; 16]) {
     for i in 0..16 {
         let entry = blacklist[i];

@@ -134,10 +134,14 @@ export async function invokeContract(
 
   if (getResult.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
     const meta = getResult.resultMetaXdr;
-    // Extract return value from TransactionMeta
+    // Extract return value — Protocol 22+ uses TransactionMeta v4; fall back to v3.
     if (meta) {
-      const v3 = meta.v3();
-      const returnVal = v3.sorobanMeta()?.returnValue();
+      let sorobanMeta: { returnValue: () => xdr.ScVal | null } | null = null;
+      try { sorobanMeta = meta.v4().sorobanMeta(); } catch { /* not v4 */ }
+      if (!sorobanMeta) {
+        try { sorobanMeta = meta.v3().sorobanMeta(); } catch { /* not v3 */ }
+      }
+      const returnVal = sorobanMeta?.returnValue();
       if (returnVal) return returnVal;
     }
     return xdr.ScVal.scvVoid();
@@ -169,14 +173,18 @@ export async function fetchDepositEvents(
       {
         type: 'contract',
         contractIds: [contractId],
-        topics: [['AAAADwAAAAdkZXBvc2l0AAAA']], // "deposit" base64
+        // Note: topic filter is applied client-side due to testnet RPC quirks
       },
     ],
   });
 
+  const DEPOSIT_SYMBOL_B64 = nativeToScVal('deposit', { type: 'symbol' }).toXDR().toString('base64');
+
   const deposits: Array<{ commitment: string; leafIndex: number; txHash: string }> = [];
   for (const event of events.events) {
     try {
+      // Filter: topic[0] must be Symbol("deposit")
+      if (!event.topic[0] || event.topic[0].toXDR('base64') !== DEPOSIT_SYMBOL_B64) continue;
       // topics[0] = "deposit", topics[1] = leaf_index (u32)
       const leafIndexVal = event.topic[1];
       const dataVal = event.value;

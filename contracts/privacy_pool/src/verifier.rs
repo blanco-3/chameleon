@@ -18,18 +18,17 @@ use soroban_sdk::{Bytes, Env};
 
 /// Expected size of the UltraHonk verification key produced by `bb write_vk`.
 ///
-/// Measured from `bb 5.0.0-nightly.20260522` output: 3680 bytes.
-/// NOTE: the vendored `ultrahonk_soroban_verifier` was written for bb v0.82.2 which
-/// produced 1760-byte VKs. The sizes differ because the proof system changed.
-/// TODO(verifier): update when rs-soroban-ultrahonk supports the current bb version.
-pub const VK_BYTES: usize = 3680;
+/// bb 0.87.0 produces 1764 bytes; the last 4 bytes are a format trailer not used by
+/// `ultrahonk_soroban_verifier`. The CLI strips them to produce a 1760-byte VK that
+/// the verifier accepts (4 header u64s + 27 G1 points × 64 bytes = 1760 bytes).
+/// Generated with: nargo 1.0.0-beta.9 + bb 0.87.0.
+pub const VK_BYTES: usize = 1760;
 
 /// Expected size of the UltraHonk proof produced by `bb prove`.
 ///
-/// Measured from `bb 5.0.0-nightly.20260522` output: 14656 bytes (458 × 32 + 64 bytes header).
-/// NOTE: `ultrahonk_soroban_verifier` expects 456 × 32 = 14592 bytes (older format).
-/// TODO(verifier): update when rs-soroban-ultrahonk supports the current bb version.
-pub const PROOF_BYTES: usize = 14656;
+/// bb 0.87.0 produces 456 × 32 = 14592 bytes (456 field elements).
+/// Generated with: nargo 1.0.0-beta.9 + bb 0.87.0.
+pub const PROOF_BYTES: usize = 14592;
 
 /// Number of public inputs for Chameleon circuit:
 ///   root, nullifier_hash, recipient, relayer, fee, blacklist_root = 6

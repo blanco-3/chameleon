@@ -23,5 +23,6 @@ soroban-sdk = { version = "26.0.1", features = ["testutils"] }
 real-verifier = ["dep:ultrahonk_soroban_verifier"]
 # Use structural mock (returns true for any proof with correct byte length); for tests
 mock = []
-# Default: mock for safety (swap to real-verifier once confirmed working)
-default = ["mock"]
+# Default: real-verifier (confirmed working with nargo 1.0.0-beta.9 + bb 0.87.0)
+# For unit tests run with: cargo test -p privacy_pool --features mock
+default = ["real-verifier"]

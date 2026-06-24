@@ -45,10 +45,10 @@ echo "Admin: $ADMIN_ADDR"
 echo "Funding admin on testnet..."
 curl -s "https://friendbot.stellar.org?addr=$ADMIN_ADDR" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Funded:', d.get('successful', d.get('hash', 'ok')))" 2>/dev/null || echo "(Friendbot may have already funded this account)"
 
-# 3. Build contract with real verifier (falls back to mock if real-verifier unavailable)
+# 3. Build contract with real UltraHonk verifier (nargo 1.0.0-beta.9 + bb 0.87.0)
 echo "[1/4] Building PrivacyPool wasm..."
 cd "$CONTRACT_DIR"
-cargo build --target wasm32v1-none --release -p privacy_pool --features mock 2>&1 | tail -3
+cargo build --target wasm32v1-none --release -p privacy_pool 2>&1 | tail -3
 
 WASM_PATH="$CONTRACT_DIR/target/wasm32v1-none/release/privacy_pool.wasm"
 if [ ! -f "$WASM_PATH" ]; then
@@ -97,7 +97,7 @@ stellar contract invoke \
   -- initialize \
   --admin "$ADMIN_ADDR" \
   --token "$NATIVE_SAC" \
-  --vk "$(python3 -c "import sys; data=open('$VK_FILE','rb').read(); print(','.join(str(b) for b in data))")" \
+  --vk "$(python3 -c "data=open('$VK_FILE','rb').read(); print(data.hex())")" \
   --denomination 1000000000 \
   --depth 20 2>/dev/null || echo "(Initialize may have failed — contract may already be initialized)"
 

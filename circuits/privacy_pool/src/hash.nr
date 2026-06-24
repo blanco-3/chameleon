@@ -1,4 +1,4 @@
-// hash.nr — Poseidon2 hash wrappers for the Chameleon circuit.
+// hash.nr  - Poseidon2 hash wrappers for the Chameleon circuit.
 //
 // Uses the Noir stdlib `std::hash::poseidon2_permutation` (t=4, BN254) to implement
 // the Poseidon2 sponge construction matching the `Poseidon2Hasher` in the Noir stdlib,
@@ -43,7 +43,7 @@ pub fn hash_2(a: Field, b: Field) -> Field {
     state[0] += a;
     state[1] += b;
     // Final permutation
-    let out = std::hash::poseidon2_permutation(state);
+    let out: [Field; 4] = std::hash::poseidon2_permutation(state, 4);
     out[0]
 }
 
@@ -56,6 +56,6 @@ pub fn hash_1(a: Field) -> Field {
     let mut state: [Field; 4] = [0, 0, 0, iv];
     // No full RATE=3 blocks; partial block: 1 element
     state[0] += a;
-    let out = std::hash::poseidon2_permutation(state);
+    let out: [Field; 4] = std::hash::poseidon2_permutation(state, 4);
     out[0]
 }

@@ -9,7 +9,7 @@
  *   [root, nullifier_hash, recipient, relayer, fee, blacklist_root]
  *
  * Proof format:
- *   - 14656 bytes (raw bb prove output)
+ *   - 14592 bytes (456 x 32 bytes; bb 0.87.0 + nargo 1.0.0-beta.9)
  *
  * Public inputs format (for contract):
  *   - 192 bytes: 6 × 32-byte big-endian field elements
@@ -35,7 +35,7 @@ const BB = process.env.BB ?? `${process.env.HOME}/.bb/bb`;
 
 /** Serialized proof + public inputs for contract submission. */
 export interface ProofData {
-  /** Raw proof bytes (14656 bytes). */
+  /** Raw proof bytes (14592 bytes with bb 0.87.0). */
   proofBytes: Buffer;
   /** Public inputs: 6 × 32-byte big-endian field elements = 192 bytes. */
   publicInputsBytes: Buffer;
@@ -158,7 +158,7 @@ export async function generateProof(params: ProofParams): Promise<ProofData> {
     const witnessPath = path.join(tmpTarget, 'privacy_pool.gz');
     const acirPath = path.join(tmpTarget, 'privacy_pool.json');
 
-    execSync(`${BB} prove -b ${acirPath} -w ${witnessPath} -o ${tmpTarget}/`, {
+    execSync(`${BB} prove --scheme ultra_honk --oracle_hash keccak -b ${acirPath} -w ${witnessPath} -o ${tmpTarget}/`, {
       cwd: tmpDir,
       stdio: 'pipe',
     });
@@ -235,7 +235,7 @@ export async function generateProofInCircuitDir(params: ProofParams): Promise<Pr
     // Generate proof
     const circuitTarget = path.join(CIRCUIT_DIR, 'target');
     execSync(
-      `${BB} prove -b ${circuitTarget}/privacy_pool.json -w ${circuitTarget}/privacy_pool.gz -o ${circuitTarget}/`,
+      `${BB} prove --scheme ultra_honk --oracle_hash keccak -b ${circuitTarget}/privacy_pool.json -w ${circuitTarget}/privacy_pool.gz -o ${circuitTarget}/`,
       { cwd: CIRCUIT_DIR, stdio: 'pipe' },
     );
 

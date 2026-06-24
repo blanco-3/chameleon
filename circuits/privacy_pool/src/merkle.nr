@@ -1,4 +1,4 @@
-// merkle.nr — Merkle tree path verification for the Chameleon circuit.
+// merkle.nr  - Merkle tree path verification for the Chameleon circuit.
 //
 // Verifies a Merkle membership proof: given a leaf, a path of siblings,
 // and a path of left/right indicators, recomputes the root from leaf to root
@@ -12,9 +12,9 @@ use crate::hash::hash_2;
 /// Compute the Merkle root from a leaf and its authentication path.
 ///
 /// # Arguments
-/// - `leaf`          — The leaf value (Poseidon2(nullifier, secret))
-/// - `path_elements` — [depth] sibling hashes along the path
-/// - `path_indices`  — [depth] direction bits: 0 = leaf is left child, 1 = leaf is right child
+/// - `leaf`           - The leaf value (Poseidon2(nullifier, secret))
+/// - `path_elements`  - [depth] sibling hashes along the path
+/// - `path_indices`   - [depth] direction bits: 0 = leaf is left child, 1 = leaf is right child
 ///
 /// # Returns
 /// The computed Merkle root. The circuit asserts this equals the public `root` input.
