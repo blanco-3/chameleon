@@ -3,11 +3,15 @@ import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     nodePolyfills({
-      // Buffer, process, etc — required by @stellar/stellar-sdk in browser
       globals: { Buffer: true, global: true, process: true },
     }),
   ],
+  build: {
+    // Remove crossorigin attribute — causes CORS issues on GCS static hosting
+    modulePreload: false,
+  },
 });

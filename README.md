@@ -7,7 +7,7 @@ revealing which deposit is theirs.
 
 ## Live Demo
 
-**Frontend**: https://storage.googleapis.com/chameleon-demo-stellar/index.html
+**Frontend**: https://chameleon-frontend-971342541474.us-central1.run.app
 *(Stellar Testnet — requires [Freighter wallet](https://www.freighter.app/))*
 
 
