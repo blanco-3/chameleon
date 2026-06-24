@@ -85,7 +85,7 @@ export default function App() {
       <footer style={styles.footer}>
         <p>Chameleon — Hackathon demo on Stellar Testnet. Not audited. Do not use for real funds.</p>
         <p style={{ fontSize: 11 }}>
-          ZK proof: Noir UltraHonk | Contract: Soroban | Verifier: rs-soroban-ultrahonk (mock for demo)
+          ZK proof: Noir UltraHonk (nargo 1.0.0-beta.9 + bb 0.87.0) | Contract: Soroban | Verifier: rs-soroban-ultrahonk (on-chain)
         </p>
       </footer>
     </div>

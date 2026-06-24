@@ -231,3 +231,39 @@ export function addressToField(address: string): string {
   const reduced = bigint % BN254_R;
   return '0x' + reduced.toString(16).padStart(64, '0');
 }
+
+/**
+ * Read-only contract call via simulation (no transaction submission).
+ * Safe for view functions that don't mutate state.
+ */
+export async function readContract(
+  contractId: string,
+  method: string,
+  args: xdr.ScVal[] = [],
+): Promise<xdr.ScVal> {
+  const server = makeServer();
+  // Use a well-known testnet account as source (read-only, doesn't submit)
+  const DUMMY_SOURCE = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN';
+  let account;
+  try {
+    account = await server.getAccount(DUMMY_SOURCE);
+  } catch {
+    // If the dummy account doesn't exist, create a minimal account object
+    account = { accountId: () => DUMMY_SOURCE, sequenceNumber: () => '0', incrementSequenceNumber: () => {}, sequence: '0' } as any;
+  }
+  const contract = new Contract(contractId);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: TESTNET_NETWORK,
+  })
+    .addOperation(contract.call(method, ...args))
+    .setTimeout(TX_TIMEOUT_SECS)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) {
+    throw new ChameleonError(`Read failed for ${method}: ${sim.error}`, 'READ_FAILED', sim);
+  }
+  const result = (sim as SorobanRpc.Api.SimulateTransactionSuccessResponse).result;
+  return result?.retval ?? xdr.ScVal.scvVoid();
+}

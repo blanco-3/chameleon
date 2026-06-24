@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import { bn254 } from '@taceo/poseidon2';
-import { rpc as SorobanRpc, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, Address } from '@stellar/stellar-sdk';
+import { rpc as SorobanRpc, TransactionBuilder, Transaction, Networks, Contract, BASE_FEE, xdr, Address } from '@stellar/stellar-sdk';
 import { getAddress, signTransaction } from '@stellar/freighter-api';
 import type { Note } from './NoteManager';
 
@@ -117,7 +117,7 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
       if (signed.error) throw new Error(`Freighter signing failed: ${signed.error}`);
 
       setStatus('Submitting deposit...');
-      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, Networks.TESTNET);
+      const signedTx = new Transaction(signed.signedTxXdr, Networks.TESTNET);
       const send = await server.sendTransaction(signedTx);
       if (send.status === 'ERROR') throw new Error(`Tx error: ${JSON.stringify(send)}`);
 

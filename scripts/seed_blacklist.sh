@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# seed_blacklist.sh — Set an initial compliance blacklist on the deployed PrivacyPool.
+# seed_blacklist.sh — Set a demo compliance blacklist on the deployed PrivacyPool.
 #
 # Usage:
 #   STELLAR_SECRET=SXXX CHAMELEON_CONTRACT_ID=Cxxx bash scripts/seed_blacklist.sh
 #
-# Sets a demo blacklist with one entry (a commitment that would represent
-# a sanctioned deposit). The blacklist root is Poseidon2 of the 16-element
-# padded array.
+# Blacklists one demo commitment (0xbbbb...) so it cannot be withdrawn.
+# The blacklist_root is set to an arbitrary non-zero sentinel value.
 
 set -euo pipefail
+
+export PATH="${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/bin:${HOME}/.nargo/bin:${HOME}/.bb:${PATH}"
 
 STELLAR_SECRET="${STELLAR_SECRET:?Set STELLAR_SECRET}"
 CONTRACT_ID="${CHAMELEON_CONTRACT_ID:?Set CHAMELEON_CONTRACT_ID}"
@@ -16,15 +17,15 @@ STELLAR_NETWORK="${STELLAR_NETWORK:-testnet}"
 STELLAR_RPC_URL="${STELLAR_RPC_URL:-https://soroban-testnet.stellar.org}"
 STELLAR_NETWORK_PASSPHRASE="${STELLAR_NETWORK_PASSPHRASE:-Test SDF Network ; September 2015}"
 
-ADMIN_ADDR=$(stellar keys address --secret-key "$STELLAR_SECRET")
+ADMIN_ADDR=$(stellar keys address chameleon-admin 2>/dev/null || stellar keys address --secret-key "$STELLAR_SECRET")
 
 echo "=== Seeding blacklist on $CONTRACT_ID ==="
 echo "Admin: $ADMIN_ADDR"
 
-# Demo blacklist: one dummy "sanctioned" commitment (all 0xBB bytes)
-BLACKLISTED_COMMITMENT="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+# Demo blacklisted commitment (all 0xBB bytes — clearly fake/demo)
+BLACKLISTED="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 
-# Compute blacklist root with TypeScript
+# Compute blacklist_root via CLI node helper
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_DIR="$SCRIPT_DIR/../cli"
 
@@ -33,28 +34,17 @@ const p2 = require('@taceo/poseidon2');
 const perm = p2.bn254.t4.permutation;
 const BN254_R = BigInt('21888242871839275222246405745257275088548364400416034343698204186575808495617');
 const POW2_64 = 2n ** 64n;
-
-function hash2(a, b) {
-  return perm([a % BN254_R, b % BN254_R, 0n, 2n * POW2_64])[0];
-}
-
-// Blacklist: [commitment, 0, 0, ..., 0] (16 entries)
-const commitment = BigInt('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
-const entries = [commitment, ...Array(15).fill(0n)];
-
-// Compute root as Poseidon2 chain
-// Simple: hash all 16 elements into a tree of depth 4
-// For simplicity, we use Poseidon2(Poseidon2(...))
-// Actually: just report the first element as the root for demo
-// In production, this would be a Merkle root
-// For demo: blacklist_root = Poseidon2(commitment, 0)
-const root = hash2(commitment, 0n);
-console.log('0x' + root.toString(16).padStart(64, '0'));
+function hash2(a, b) { return perm([a % BN254_R, b % BN254_R, 0n, 2n * POW2_64])[0]; }
+const c = BigInt('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+const root = hash2(c, 0n);
+console.log(root.toString(16).padStart(64, '0'));
 " 2>/dev/null)
 
-echo "Blacklist root: $BLACKLIST_ROOT"
+echo "Blacklist root (hex): $BLACKLIST_ROOT"
 
-echo "Setting blacklist..."
+ENTRIES_FILE=$(mktemp /tmp/entries.XXXX.json)
+echo "[\"$BLACKLISTED\"]" > "$ENTRIES_FILE"
+
 stellar contract invoke \
   --id "$CONTRACT_ID" \
   --source "$STELLAR_SECRET" \
@@ -64,9 +54,11 @@ stellar contract invoke \
   -- set_blacklist \
   --admin "$ADMIN_ADDR" \
   --root "$BLACKLIST_ROOT" \
-  --entries "[$BLACKLISTED_COMMITMENT]" \
-  2>/dev/null && echo "Blacklist set successfully!" || echo "(set_blacklist may have failed — check CLI)"
+  --entries-file-path "$ENTRIES_FILE" \
+  2>&1
+rm -f "$ENTRIES_FILE" 
 
 echo ""
-echo "Demo blacklisted commitment: $BLACKLISTED_COMMITMENT"
-echo "Anyone using this commitment cannot withdraw (StaleBlacklist or InvalidProof)."
+echo "Blacklist set. Demo blacklisted commitment: 0x${BLACKLISTED}"
+echo "Any proof using blacklist_root=0 will now fail with StaleBlacklist."
+echo "Any prover whose commitment is 0x${BLACKLISTED} cannot generate a valid proof."

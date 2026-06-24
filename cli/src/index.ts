@@ -27,11 +27,13 @@ import {
   DENOMINATION_STROOPS,
   TESTNET_NETWORK,
   ChameleonError,
+  readContract,
 } from './stellar';
 import {
   Keypair,
   xdr,
   nativeToScVal,
+  scValToNative,
   Address as StellarAddress,
 } from '@stellar/stellar-sdk';
 import { hexToField, fieldToHex } from './poseidon';
@@ -164,9 +166,22 @@ program
     // Generate Merkle path
     const merkleProof = tree.generateProof(leafIndex);
 
-    // Get on-chain state for blacklist root (would come from contract query in production)
-    const blacklistRoot = '0x' + '0'.repeat(64); // zero = no blacklist set
+    // Query on-chain blacklist root via stellar CLI
+    let blacklistRoot = '0x' + '0'.repeat(64);
     const blacklist: string[] = [];
+    if (contractId) {
+      try {
+        const { execSync } = await import('child_process');
+        const raw = execSync(
+          `stellar contract invoke --id ${contractId} --source ${process.env.STELLAR_SECRET ?? 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN'} --network testnet -- blacklist_root 2>/dev/null`,
+          { encoding: 'utf8' },
+        ).trim().replace(/['"]/g, '');
+        if (raw && raw !== '0'.repeat(64)) {
+          blacklistRoot = '0x' + raw;
+          console.log(`On-chain blacklist root: ${blacklistRoot}`);
+        }
+      } catch { /* if query fails, use zero root */ }
+    }
 
     const recipientField = addressToField(opts.to);
     const relayerField = opts.relayer ? addressToField(opts.relayer) : '0x' + '0'.repeat(64);

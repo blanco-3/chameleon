@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { rpc as SorobanRpc, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, nativeToScVal, Address } from '@stellar/stellar-sdk';
+import { rpc as SorobanRpc, Transaction, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, nativeToScVal, Address } from '@stellar/stellar-sdk';
 import { getAddress, signTransaction } from '@stellar/freighter-api';
 import type { Note } from './NoteManager';
 
@@ -97,7 +97,8 @@ export const WithdrawCard: React.FC<WithdrawCardProps> = ({ note }) => {
       const blRootBytes = Buffer.from(pi.blacklistRoot.slice(2), 'hex');
       const fee = BigInt(proof.fee ?? 0);
 
-      const recipientAddr = recipient || pi.recipient;
+      // proof.recipient is the Stellar G address; pi.recipient is a field element — use the former
+      const recipientAddr = recipient || proof.recipient;
       const relayerAddr = proof.relayer || recipientAddr;
 
       const tx = new TransactionBuilder(account, {
@@ -133,7 +134,7 @@ export const WithdrawCard: React.FC<WithdrawCardProps> = ({ note }) => {
       if (signed.error) throw new Error(`Freighter signing failed: ${signed.error}`);
 
       setStatus('Submitting withdrawal...');
-      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, Networks.TESTNET);
+      const signedTx = new Transaction(signed.signedTxXdr, Networks.TESTNET);
       const send = await server.sendTransaction(signedTx);
       if (send.status === 'ERROR') throw new Error(`Tx error: ${JSON.stringify(send)}`);
 
