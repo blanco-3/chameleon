@@ -5,6 +5,12 @@ Chameleon is a Tornado-Cash-style privacy mixer for Stellar with built-in compli
 proving their deposit is in the Merkle tree AND is not in a compliance blacklist — all without
 revealing which deposit is theirs.
 
+## Live Demo
+
+**Frontend**: https://storage.googleapis.com/chameleon-demo-stellar/index.html
+*(Stellar Testnet — requires [Freighter wallet](https://www.freighter.app/))*
+
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Chameleon Flow                           │
