@@ -40,3 +40,4 @@ deployed.json
 .vscode/
 .idea/
 *.swp
+.github/workflows/
