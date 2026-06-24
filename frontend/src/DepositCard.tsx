@@ -4,12 +4,14 @@
  * Flow:
  *   1. Generate a new note (nullifier + secret + commitment)
  *   2. Display strong save warning
- *   3. Submit deposit transaction
+ *   3. Connect Freighter wallet
+ *   4. Submit deposit transaction (signed by Freighter)
  */
 
 import React, { useState } from 'react';
 import { bn254 } from '@taceo/poseidon2';
-import { Keypair, rpc as SorobanRpc, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, nativeToScVal, Address } from '@stellar/stellar-sdk';
+import { rpc as SorobanRpc, TransactionBuilder, Networks, Contract, BASE_FEE, xdr, Address } from '@stellar/stellar-sdk';
+import { getAddress, signTransaction } from '@stellar/freighter-api';
 import type { Note } from './NoteManager';
 
 const TESTNET_RPC = 'https://soroban-testnet.stellar.org';
@@ -50,7 +52,7 @@ interface DepositCardProps {
 }
 
 export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => {
-  const [secretKey, setSecretKey] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const [status, setStatus] = useState('');
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,9 +64,20 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
     setStatus('Note generated. SAVE IT NOW before depositing!');
   }
 
+  async function handleConnectWallet() {
+    setStatus('Connecting to Freighter...');
+    const result = await getAddress();
+    if (result.error) {
+      setStatus(`Wallet error: ${result.error}. Is Freighter installed?`);
+      return;
+    }
+    setWalletAddress(result.address);
+    setStatus(`Connected: ${result.address}`);
+  }
+
   async function handleDeposit() {
     if (!note) { setStatus('Generate a note first!'); return; }
-    if (!secretKey) { setStatus('Enter your Stellar secret key.'); return; }
+    if (!walletAddress) { setStatus('Connect your Freighter wallet first.'); return; }
     if (!CONTRACT_ID) { setStatus('Set VITE_CONTRACT_ID in .env'); return; }
 
     setLoading(true);
@@ -72,8 +85,7 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
 
     try {
       const server = new SorobanRpc.Server(TESTNET_RPC);
-      const keypair = Keypair.fromSecret(secretKey);
-      const account = await server.getAccount(keypair.publicKey());
+      const account = await server.getAccount(walletAddress);
 
       const commitment = Buffer.from(note.commitment.slice(2), 'hex');
       const contract = new Contract(CONTRACT_ID);
@@ -84,7 +96,7 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
       })
         .addOperation(contract.call(
           'deposit',
-          new Address(keypair.publicKey()).toScVal(),
+          new Address(walletAddress).toScVal(),
           xdr.ScVal.scvBytes(commitment),
         ))
         .setTimeout(60)
@@ -97,10 +109,16 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
       }
 
       const assembled = SorobanRpc.assembleTransaction(tx, sim).build();
-      assembled.sign(keypair);
+
+      setStatus('Waiting for Freighter signature...');
+      const signed = await signTransaction(assembled.toXDR(), {
+        networkPassphrase: Networks.TESTNET,
+      });
+      if (signed.error) throw new Error(`Freighter signing failed: ${signed.error}`);
 
       setStatus('Submitting deposit...');
-      const send = await server.sendTransaction(assembled);
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, Networks.TESTNET);
+      const send = await server.sendTransaction(signedTx);
       if (send.status === 'ERROR') throw new Error(`Tx error: ${JSON.stringify(send)}`);
 
       setStatus(`Deposit submitted! Tx: ${send.hash.slice(0, 16)}... Sync the tree before proving.`);
@@ -135,20 +153,22 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
       )}
 
       <div style={{ marginTop: 16 }}>
-        <label style={styles.label}>Stellar Secret Key (S...)</label>
-        <input
-          type="password"
-          value={secretKey}
-          onChange={e => setSecretKey(e.target.value)}
-          placeholder="SXXXXXXXXXXXXXXXXXXXXXXX..."
-          style={styles.input}
-        />
+        {walletAddress ? (
+          <div style={styles.walletConnected}>
+            <span style={{ color: '#4ade80' }}>✓ Connected:</span>{' '}
+            <code style={{ fontSize: 12 }}>{walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}</code>
+          </div>
+        ) : (
+          <button onClick={handleConnectWallet} style={styles.walletBtn}>
+            🔗 Connect Freighter Wallet
+          </button>
+        )}
       </div>
 
       <button
         onClick={handleDeposit}
-        disabled={!note || loading}
-        style={{ ...styles.primaryBtn, opacity: (!note || loading) ? 0.5 : 1, marginTop: 16 }}
+        disabled={!note || !walletAddress || loading}
+        style={{ ...styles.primaryBtn, opacity: (!note || !walletAddress || loading) ? 0.5 : 1, marginTop: 16 }}
       >
         {loading ? 'Processing...' : 'Deposit 100 XLM'}
       </button>
@@ -165,8 +185,8 @@ const styles: Record<string, React.CSSProperties> = {
   warning: { background: '#7c2d12', border: '1px solid #ea580c', borderRadius: 6, padding: 12, marginBottom: 12, fontSize: 13 },
   noteBox: { background: '#0f172a', borderRadius: 8, padding: 12 },
   code: { display: 'block', wordBreak: 'break-all', fontSize: 11, color: '#86efac', background: '#0f172a', padding: 8, borderRadius: 4 },
-  label: { display: 'block', marginBottom: 6, fontSize: 13, color: '#94a3b8' },
-  input: { width: '100%', padding: '8px 12px', background: '#0f172a', border: '1px solid #334155', borderRadius: 6, color: '#e2e8f0', fontSize: 13, boxSizing: 'border-box' },
+  walletBtn: { padding: '10px 20px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
+  walletConnected: { background: '#0f172a', border: '1px solid #166534', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#94a3b8' },
   primaryBtn: { padding: '10px 20px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
   status: { marginTop: 12, fontSize: 13, color: '#94a3b8', wordBreak: 'break-word' },
 };

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
     "@stellar/stellar-sdk": "^13.0.0",
     "@taceo/poseidon2": "^0.2.0",
     "react": "^18.3.1",
