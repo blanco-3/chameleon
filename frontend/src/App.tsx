@@ -4,6 +4,7 @@ import { DepositCard } from './DepositCard';
 import { WithdrawCard } from './WithdrawCard';
 import { NoteManager, type Note } from './NoteManager';
 import { type AppState, STATES, PAL, FONTS } from './types';
+import { AppPage } from './AppPage';
 
 const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID ?? 'CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V';
 const PANEL = '#1b2418';
@@ -25,11 +26,14 @@ function PixelLogo() {
 }
 
 export default function App() {
+  const [view, setView] = useState<'hero' | 'app'>('hero');
   const [appState, setAppState] = useState<AppState>('idle');
   const [tab, setTab] = useState<Tab>('deposit');
   const [note, setNote] = useState<Note | null>(null);
   const [noteSaved, setNoteSaved] = useState(false);
   const flowRef = useRef<HTMLDivElement>(null);
+
+  if (view === 'app') return <AppPage onBack={() => setView('hero')} />;
 
   const glow = STATES[appState].c;
 
@@ -127,10 +131,27 @@ export default function App() {
             </div>
           </div>
 
-          {/* scroll badge: state dot, click → scroll to flow */}
+          {/* Launch App button — prominent CTA */}
+          <button
+            onClick={() => setView('app')}
+            style={{
+              position: 'absolute', left: '50%', bottom: 72,
+              transform: 'translateX(-50%)', zIndex: 6,
+              fontFamily: FONTS.chakra, fontSize: 13, fontWeight: 700,
+              letterSpacing: '0.22em', textTransform: 'uppercase',
+              padding: '14px 34px', borderRadius: 4, border: 'none', cursor: 'pointer',
+              background: PAL.sand, color: '#141a12',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Launch App →
+          </button>
+
+          {/* scroll badge: state dot, click → scroll to design section */}
           <button
             onClick={scrollToFlow}
-            title="Enter the pool"
+            title="See states"
             style={{
               position: 'absolute', left: '50%', bottom: 14,
               transform: 'translateX(-50%)', zIndex: 6,
