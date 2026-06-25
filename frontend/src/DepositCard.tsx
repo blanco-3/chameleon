@@ -1,18 +1,13 @@
-/**
- * DepositCard.tsx — Deposit 100 XLM into the Chameleon privacy pool.
- *
- * Flow:
- *   1. Generate a new note (nullifier + secret + commitment)
- *   2. Display strong save warning
- *   3. Connect Freighter wallet
- *   4. Submit deposit transaction (signed by Freighter)
- */
-
 import React, { useState } from 'react';
 import { bn254 } from '@taceo/poseidon2';
-import { rpc as SorobanRpc, TransactionBuilder, Transaction, Networks, Contract, BASE_FEE, xdr, Address } from '@stellar/stellar-sdk';
+import {
+  rpc as SorobanRpc, TransactionBuilder, Transaction,
+  Networks, Contract, BASE_FEE, xdr, Address,
+} from '@stellar/stellar-sdk';
 import { getAddress, signTransaction } from '@stellar/freighter-api';
 import type { Note } from './NoteManager';
+import type { AppState } from './types';
+import { PAL, FONTS } from './types';
 
 const TESTNET_RPC = 'https://soroban-testnet.stellar.org';
 const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID ?? '';
@@ -23,7 +18,6 @@ const perm = bn254.t4.permutation;
 function hash2(a: bigint, b: bigint): bigint {
   return perm([a % BN254_R, b % BN254_R, 0n, 2n * POW2_64])[0];
 }
-
 function randField(): bigint {
   const arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
@@ -31,27 +25,22 @@ function randField(): bigint {
   for (const b of arr) v = (v << 8n) | BigInt(b);
   return v % BN254_R;
 }
-
 function fieldToHex(f: bigint): string {
   return '0x' + f.toString(16).padStart(64, '0');
 }
-
 function generateNote(): Note {
   const nullifier = randField();
   const secret = randField();
   const commitment = hash2(nullifier, secret);
-  return {
-    nullifier: fieldToHex(nullifier),
-    secret: fieldToHex(secret),
-    commitment: fieldToHex(commitment),
-  };
+  return { nullifier: fieldToHex(nullifier), secret: fieldToHex(secret), commitment: fieldToHex(commitment) };
 }
 
-interface DepositCardProps {
+interface Props {
   onNoteGenerated: (note: Note) => void;
+  onStateChange: (s: AppState) => void;
 }
 
-export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => {
+export const DepositCard: React.FC<Props> = ({ onNoteGenerated, onStateChange }) => {
   const [walletAddress, setWalletAddress] = useState('');
   const [status, setStatus] = useState('');
   const [note, setNote] = useState<Note | null>(null);
@@ -61,67 +50,55 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
     const n = generateNote();
     setNote(n);
     onNoteGenerated(n);
-    setStatus('Note generated. SAVE IT NOW before depositing!');
+    setStatus('Note generated — save it before depositing.');
   }
 
   async function handleConnectWallet() {
     setStatus('Connecting to Freighter...');
     const result = await getAddress();
     if (result.error) {
-      setStatus(`Wallet error: ${result.error}. Is Freighter installed?`);
+      setStatus(`Wallet error: ${result.error}`);
       return;
     }
     setWalletAddress(result.address);
-    setStatus(`Connected: ${result.address}`);
+    onStateChange('connected');
+    setStatus('');
   }
 
   async function handleDeposit() {
-    if (!note) { setStatus('Generate a note first!'); return; }
+    if (!note) { setStatus('Generate a note first.'); return; }
     if (!walletAddress) { setStatus('Connect your Freighter wallet first.'); return; }
     if (!CONTRACT_ID) { setStatus('Set VITE_CONTRACT_ID in .env'); return; }
 
     setLoading(true);
     setStatus('Connecting to testnet...');
-
     try {
       const server = new SorobanRpc.Server(TESTNET_RPC);
       const account = await server.getAccount(walletAddress);
-
       const commitment = Buffer.from(note.commitment.slice(2), 'hex');
       const contract = new Contract(CONTRACT_ID);
 
-      const tx = new TransactionBuilder(account, {
-        fee: BASE_FEE,
-        networkPassphrase: Networks.TESTNET,
-      })
-        .addOperation(contract.call(
-          'deposit',
-          new Address(walletAddress).toScVal(),
-          xdr.ScVal.scvBytes(commitment),
-        ))
+      const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+        .addOperation(contract.call('deposit', new Address(walletAddress).toScVal(), xdr.ScVal.scvBytes(commitment)))
         .setTimeout(60)
         .build();
 
-      setStatus('Simulating transaction...');
+      setStatus('Simulating...');
       const sim = await server.simulateTransaction(tx);
-      if (SorobanRpc.Api.isSimulationError(sim)) {
-        throw new Error(`Simulation failed: ${sim.error}`);
-      }
+      if (SorobanRpc.Api.isSimulationError(sim)) throw new Error(`Simulation failed: ${sim.error}`);
 
       const assembled = SorobanRpc.assembleTransaction(tx, sim).build();
-
       setStatus('Waiting for Freighter signature...');
-      const signed = await signTransaction(assembled.toXDR(), {
-        networkPassphrase: Networks.TESTNET,
-      });
-      if (signed.error) throw new Error(`Freighter signing failed: ${signed.error}`);
+      const signed = await signTransaction(assembled.toXDR(), { networkPassphrase: Networks.TESTNET });
+      if (signed.error) throw new Error(`Signing failed: ${signed.error}`);
 
-      setStatus('Submitting deposit...');
+      setStatus('Submitting...');
       const signedTx = new Transaction(signed.signedTxXdr, Networks.TESTNET);
       const send = await server.sendTransaction(signedTx);
       if (send.status === 'ERROR') throw new Error(`Tx error: ${JSON.stringify(send)}`);
 
-      setStatus(`Deposit submitted! Tx: ${send.hash.slice(0, 16)}... Sync the tree before proving.`);
+      onStateChange('deposited');
+      setStatus(`Deposit submitted! Tx: ${send.hash.slice(0, 16)}… Sync the tree before proving.`);
     } catch (e) {
       setStatus(`Error: ${(e as Error).message}`);
     } finally {
@@ -129,64 +106,136 @@ export const DepositCard: React.FC<DepositCardProps> = ({ onNoteGenerated }) => 
     }
   }
 
+  const CREAM = '#d9e1c4';
+  const SERIF = FONTS.serif;
+  const SANS = FONTS.sans;
+
   return (
-    <div style={styles.card}>
-      <h2 style={styles.title}>Deposit 100 XLM</h2>
-
-      {!note ? (
-        <div>
-          <p style={styles.hint}>
-            First, generate a secret note. You MUST save this file — it is the only way to withdraw.
-          </p>
-          <button onClick={handleGenerateNote} style={styles.primaryBtn}>
-            Generate Note
-          </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      {/* denomination */}
+      <div>
+        <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.32em', textTransform: 'uppercase', color: PAL.muted, fontWeight: 600, marginBottom: 8 }}>
+          fixed denomination
         </div>
-      ) : (
-        <div style={styles.noteBox}>
-          <div style={styles.warning}>
-            ⚠ <strong>SAVE YOUR NOTE NOW!</strong> Losing it means losing 100 XLM permanently.
-          </div>
-          <p style={{ fontSize: 13 }}><strong>Commitment:</strong></p>
-          <code style={styles.code}>{note.commitment}</code>
+        <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 500, color: CREAM, lineHeight: 1 }}>
+          100 <span style={{ color: PAL.sand }}>XLM</span>
         </div>
-      )}
-
-      <div style={{ marginTop: 16 }}>
-        {walletAddress ? (
-          <div style={styles.walletConnected}>
-            <span style={{ color: '#4ade80' }}>✓ Connected:</span>{' '}
-            <code style={{ fontSize: 12 }}>{walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}</code>
-          </div>
-        ) : (
-          <button onClick={handleConnectWallet} style={styles.walletBtn}>
-            🔗 Connect Freighter Wallet
-          </button>
-        )}
       </div>
 
-      <button
-        onClick={handleDeposit}
-        disabled={!note || !walletAddress || loading}
-        style={{ ...styles.primaryBtn, opacity: (!note || !walletAddress || loading) ? 0.5 : 1, marginTop: 16 }}
-      >
-        {loading ? 'Processing...' : 'Deposit 100 XLM'}
-      </button>
+      {!note ? (
+        <>
+          <p style={{ margin: 0, fontFamily: SANS, fontSize: 14, lineHeight: 1.65, color: PAL.creamDim }}>
+            Generate a secret note first. It holds your nullifier and secret — the only key to your deposit.
+          </p>
+          <ForestBtn onClick={handleGenerateNote}>Generate Note</ForestBtn>
+        </>
+      ) : (
+        <>
+          <WarnLine>Save your note now — losing it means losing 100 XLM, with no recovery.</WarnLine>
+          <Labeled label="Commitment">
+            <Mono>{note.commitment}</Mono>
+          </Labeled>
+          <WalletRow address={walletAddress} onConnect={handleConnectWallet} />
+          <ForestBtn
+            onClick={handleDeposit}
+            disabled={!walletAddress || loading}
+          >
+            {loading ? 'Processing...' : 'Deposit 100 XLM'}
+          </ForestBtn>
+        </>
+      )}
 
-      {status && <p style={styles.status}>{status}</p>}
+      {status && <StatusLine>{status}</StatusLine>}
     </div>
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
-  card: { background: '#1e293b', borderRadius: 12, padding: 24, maxWidth: 600, margin: '0 auto 24px' },
-  title: { margin: '0 0 16px', color: '#38bdf8' },
-  hint: { color: '#94a3b8', fontSize: 14 },
-  warning: { background: '#7c2d12', border: '1px solid #ea580c', borderRadius: 6, padding: 12, marginBottom: 12, fontSize: 13 },
-  noteBox: { background: '#0f172a', borderRadius: 8, padding: 12 },
-  code: { display: 'block', wordBreak: 'break-all', fontSize: 11, color: '#86efac', background: '#0f172a', padding: 8, borderRadius: 4 },
-  walletBtn: { padding: '10px 20px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
-  walletConnected: { background: '#0f172a', border: '1px solid #166534', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#94a3b8' },
-  primaryBtn: { padding: '10px 20px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
-  status: { marginTop: 12, fontSize: 13, color: '#94a3b8', wordBreak: 'break-word' },
-};
+/* ── Shared primitives (forest palette) ── */
+
+export function ForestBtn({ children, onClick, disabled, variant = 'solid', style }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  variant?: 'solid' | 'outline';
+  style?: React.CSSProperties;
+}) {
+  const [hover, setHover] = useState(false);
+  const base: React.CSSProperties = {
+    fontFamily: FONTS.sans, fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase',
+    fontWeight: 600, padding: '14px 26px', borderRadius: 2,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+    transition: 'all 0.25s ease',
+    border: '1px solid transparent',
+    whiteSpace: 'nowrap',
+    alignSelf: 'flex-start',
+  };
+  const varStyle: React.CSSProperties = variant === 'solid'
+    ? { background: hover && !disabled ? PAL.sandLt : PAL.sand, color: '#1a150e' }
+    : { background: hover && !disabled ? 'rgba(168,148,116,0.10)' : 'transparent', color: PAL.sand, border: `1px solid ${PAL.lineStrong}` };
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ ...base, ...varStyle, ...style }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function WarnLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: '13px 16px', background: PAL.warnBg, border: `1px solid ${PAL.warnLine}`, borderRadius: 2 }}>
+      <span style={{ color: PAL.sand, fontSize: 13 }}>—</span>
+      <span style={{ fontFamily: FONTS.sans, fontSize: 12.5, lineHeight: 1.55, color: '#d9e1c4' }}>{children}</span>
+    </div>
+  );
+}
+
+export function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <span style={{ fontFamily: FONTS.sans, fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: PAL.muted }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+export function Mono({ children, block }: { children: React.ReactNode; block?: boolean }) {
+  const Tag = block ? 'pre' : 'div';
+  return (
+    <Tag style={{
+      margin: 0, fontFamily: FONTS.mono, fontSize: 11, lineHeight: 1.6,
+      color: PAL.creamDim, background: PAL.bg, border: `1px solid ${PAL.line}`,
+      borderRadius: 2, padding: block ? '14px 16px' : '11px 14px',
+      wordBreak: block ? 'normal' : 'break-all',
+      whiteSpace: block ? 'pre' : 'normal',
+      overflowX: block ? 'auto' : 'visible',
+    }}>
+      {children}
+    </Tag>
+  );
+}
+
+export function StatusLine({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ margin: 0, fontFamily: FONTS.sans, fontSize: 12, letterSpacing: '0.04em', color: PAL.sand, wordBreak: 'break-word' }}>
+      {children}
+    </p>
+  );
+}
+
+export function WalletRow({ address, onConnect }: { address: string; onConnect: () => void }) {
+  if (address) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: FONTS.sans, fontSize: 12, color: PAL.creamDim }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: PAL.sand, display: 'inline-block' }} />
+        <span style={{ fontFamily: FONTS.mono }}>{address.slice(0, 6)}…{address.slice(-6)}</span>
+      </div>
+    );
+  }
+  return <ForestBtn variant="outline" onClick={onConnect}>Connect Freighter</ForestBtn>;
+}

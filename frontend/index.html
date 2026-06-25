@@ -5,8 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/chameleon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chameleon — Privacy Pool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@700;800&family=Chakra+Petch:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-      body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #aab184; color: #d9e1c4; }
+      @keyframes cham-bob {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-4px); }
+      }
+      @keyframes cham-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.3; }
+      }
     </style>
   </head>
   <body>
