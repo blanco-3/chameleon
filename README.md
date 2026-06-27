@@ -10,6 +10,11 @@ revealing which deposit is theirs.
 **Frontend**: https://chameleon-frontend-971342541474.us-central1.run.app
 *(Stellar Testnet — requires [Freighter wallet](https://www.freighter.app/))*
 
+**Whitepaper / Docs**: https://chameleon-frontend-971342541474.us-central1.run.app/docs.html
+
+> Full E2E confirmed on testnet:
+> Deposit TX: [`bb0be3c7...`](https://stellar.expert/explorer/testnet/tx/bb0be3c702e6e7cb4ed53986f26aa50a8427343d665f67ae38355b7281328275) · Withdraw TX: [`1fba5fb3...`](https://stellar.expert/explorer/testnet/tx/1fba5fb3d513b8ae4b97139c1ee8c155b350a901bf9bba9737d82175ea3d13a7)
+
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -101,11 +106,11 @@ chameleon withdraw --proof proof.json
 
 | Contract | Address |
 |----------|---------|
-| PrivacyPool | `CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V` |
+| PrivacyPool (active) | `CBP5KR3H3QAWCQKGLKVQOUUM6UO5DVVVEWZJSLEGFLJUKZI4OOAPX5GR` |
 | Admin | `GBOEXHMCP3J4R4FSGYBLGHWGCTQ4D2TNXI2R3N6R7J6GT4GQD2WBGS2I` |
 | Native XLM SAC | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-Explorer: https://stellar.expert/explorer/testnet/contract/CD4B6JWALP4F256PZXCSOQN4GIKIMVBSI7A4VMK7NXZVMRIUYK3TYP5V
+Explorer: https://stellar.expert/explorer/testnet/contract/CBP5KR3H3QAWCQKGLKVQOUUM6UO5DVVVEWZJSLEGFLJUKZI4OOAPX5GR
 
 ## Architecture
 
@@ -130,8 +135,6 @@ See `DESIGN.md` for full specification.
 |---|---|
 | O(k) blacklist (16 slots) | Merkle non-membership proof |
 | Single denomination (100 XLM) | Multi-denomination pools |
-| Single denomination (100 XLM) | Multi-denomination pools |
-| O(k) blacklist (16 slots) | Merkle non-membership proof |
 | Single admin key | Multi-sig / DAO governance |
 | Testnet only | Mainnet + audits |
 
@@ -148,6 +151,7 @@ See `DESIGN.md` for full specification.
 - [x] Phase 4 — Soroban contract (10/10 tests pass, wasm build OK)
 - [x] Phase 5 — Deployed to Stellar Testnet
 - [x] Phase 6 — CLI / SDK
-- [x] Phase 7 — Frontend (React + Vite)
-- [x] Phase 8 — Demo scripts, CI, docs
+- [x] Phase 7 — Frontend (React + Vite + Freighter wallet)
+- [x] Phase 8 — Demo scripts, CI, docs, whitepaper
 - [x] Phase 9 — Real UltraHonk verifier (rs-soroban-ultrahonk 9/9 tests; E2E ✓)
+- [x] Phase 10 — Editorial redesign (forest/khaki, pixel chameleon sprite, Launch App UI)
